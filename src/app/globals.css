@@ -1,0 +1,93 @@
+:root {
+  /* Paleta Confeitaria MegaBite */
+  --primary: #6b3e2e;          /* Chocolate Nobre */
+  --primary-hover: #522e21;
+  --secondary: #d97736;        /* Caramelo / Laranja Suave */
+  --secondary-hover: #be6328;
+  --accent: #f4c2c2;           /* Rosa Confeito */
+  --background: #fffcf8;       /* Creme Baunilha */
+  --surface: #ffffff;
+  --text: #2c221e;             /* Cacau Escuro */
+  --text-muted: #6e5d56;
+  --border: #ebdcd5;
+  --shadow: 0 4px 12px rgba(107, 62, 46, 0.08);
+  --radius: 12px;
+  --max-width: 1200px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--background);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* Botões Padrão */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-hover);
+}
+
+.btn-outline {
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  background: transparent;
+}
+
+.btn-outline:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+} 
