@@ -8,7 +8,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   
-  // Campos do formulário
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -44,7 +43,7 @@ export default function LoginPage() {
         });
 
         if (res.error) {
-          setError(res.error.message || "Email ou palavra-passe incorretos.");
+          setError(res.error.message || "Email ou senha incorretos.");
         } else {
           router.push("/");
           router.refresh();
