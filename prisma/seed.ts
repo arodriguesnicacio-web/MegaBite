@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "../src/app/lib/prisma";
+import { prisma } from "../src/lib/prisma";
 
 async function main() {
   console.log("🌱 Iniciando o povoamento do banco de dados (seed)...");
@@ -30,7 +30,7 @@ async function main() {
 
   const categoriesMap: Record<string, string> = {};
 
-  for (const cat of categoriesData) {
+  for (const cat of categoriesData) { 
     const createdCat = await prisma.category.upsert({
       where: { name: cat.name },
       update: { description: cat.description },

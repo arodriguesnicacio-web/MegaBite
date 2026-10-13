@@ -133,9 +133,9 @@ model Product {
 model ProductSize {
   id        String   @id @default(cuid())
   productId String
-  sizeName  String
+  sizeName  String   // Ex: "P", "M", "G", "Unidade", "Caixa c/ 6"
   price     Decimal  @db.Decimal(10, 2)
-  weight    String?
+  weight    String?  // Ex: "500g", "1kg"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
