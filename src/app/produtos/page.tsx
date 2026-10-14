@@ -8,7 +8,7 @@ export default function CatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const categories = ["Todos", "Bolos de Festa", "Doces Tradicionais", "Salgados"];
+  const categories = ["Todos", "Bolos de Festa", "Doces Tradicionais", "Salgados", "Kits Festa"]; 
 
   const filteredProducts = PRODUCTS.filter((product) => {
     const matchesCategory = selectedCategory === "Todos" || product.category === selectedCategory;
