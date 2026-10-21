@@ -50,6 +50,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos. Pode conter traços de nozes.",
       packaging: "Caixa reforçada com prato rígido para transporte seguro.",
       categoryName: "Bolos",
+      imageUrl: "https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=500&q=80",
       sizes: [
         { sizeName: "P", price: 65.00, weight: "1,0 kg (serve ~8 pessoas)" },
         { sizeName: "M", price: 95.00, weight: "1,8 kg (serve ~15 pessoas)" },
@@ -63,6 +64,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos.",
       packaging: "Caixa para bolo decorada e transparente.",
       categoryName: "Bolos",
+      imageUrl: "https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=500&q=80",
       sizes: [
         { sizeName: "P", price: 70.00, weight: "1,0 kg (serve ~8 pessoas)" },
         { sizeName: "M", price: 105.00, weight: "1,8 kg (serve ~15 pessoas)" },
@@ -75,6 +77,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos.",
       packaging: "Caixa individual para presente.",
       categoryName: "Cupcakes",
+      imageUrl: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=500&q=80",
       sizes: [
         { sizeName: "Unidade", price: 12.00, weight: "120g" },
         { sizeName: "Caixa c/ 4", price: 44.00, weight: "480g" },
@@ -87,6 +90,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos.",
       packaging: "Embalagem individual celofane selada.",
       categoryName: "Brownies",
+      imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=500&q=80",
       sizes: [
         { sizeName: "Unidade", price: 9.50, weight: "90g" },
         { sizeName: "Caixa c/ 6", price: 54.00, weight: "540g" },
@@ -99,6 +103,7 @@ async function main() {
       allergens: "Contém glúten e lactose.",
       packaging: "Torta servida em embalagem plástica de alta resistência.",
       categoryName: "Tortas",
+      imageUrl: "https://images.unsplash.com/photo-1519869325930-281384150729?w=500&q=80",
       sizes: [
         { sizeName: "Média", price: 80.00, weight: "1,2 kg" },
         { sizeName: "Grande", price: 120.00, weight: "2,0 kg" },
@@ -111,6 +116,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos.",
       packaging: "Caixa reforçada para transporte.",
       categoryName: "Tortas",
+      imageUrl: "https://images.unsplash.com/photo-1519869325930-281384150729?w=500&q=80",
       sizes: [
         { sizeName: "Média", price: 75.00, weight: "1,1 kg" },
       ],
@@ -122,6 +128,7 @@ async function main() {
       allergens: "Contém lactose. Pode conter glúten e avelã.",
       packaging: "Caixa organizadora para festa com forminhas finas.",
       categoryName: "Doces",
+      imageUrl: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=500&q=80",
       sizes: [
         { sizeName: "Cento (100 un)", price: 130.00, weight: "1,5 kg" },
         { sizeName: "Meio Cento (50 un)", price: 70.00, weight: "750g" },
@@ -134,6 +141,7 @@ async function main() {
       allergens: "Contém glúten, lactose e ovos.",
       packaging: "Conjunto de caixas temáticas para presente e transporte.",
       categoryName: "Kits",
+      imageUrl: "https://images.unsplash.com/photo-1535141192574-5d4897c13136?w=500&q=80",
       sizes: [
         { sizeName: "Kit Completo", price: 230.00, weight: "Aprox. 3,5 kg" },
       ],
@@ -143,7 +151,6 @@ async function main() {
   for (const prod of products) {
     const categoryId = categoriesMap[prod.categoryName];
 
-    // Verificar se produto já existe
     const existingProduct = await prisma.product.findFirst({
       where: { name: prod.name },
     });
@@ -156,11 +163,20 @@ async function main() {
           ingredients: prod.ingredients,
           allergens: prod.allergens,
           packaging: prod.packaging,
+          imageUrl: prod.imageUrl,
+          isActive: true,
           categoryId,
           createdById: admin.id,
           sizes: {
             create: prod.sizes,
           },
+        },
+      });
+    } else {
+      await prisma.product.update({
+        where: { id: existingProduct.id },
+        data: {
+          imageUrl: prod.imageUrl,
         },
       });
     }
@@ -177,4 +193,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });
