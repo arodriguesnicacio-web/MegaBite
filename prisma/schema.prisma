@@ -187,18 +187,18 @@ model OrderItem {
 model QuoteRequest {
   id           String      @id @default(cuid())
   userId       String
-  productType  String
-  servings     Int
-  desiredDate  DateTime
-  flavor       String
-  theme        String?
-  restrictions String?
-  details      String
+  productType  String      @map("tipo_produto")
+  servings     Int         @map("quantidade_pessoas")
+  desiredDate  DateTime    @map("data_desejada")
+  flavor       String      @map("sabor")
+  theme        String?     @map("tema")
+  restrictions String?     @map("restricoes")
+  details      String      @map("detalhes")
   status       QuoteStatus @default(SOLICITADO)
-  quotedPrice  Decimal?    @db.Decimal(10, 2)
-  adminNotes   String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  quotedPrice  Decimal?    @db.Decimal(10, 2)@map("preco_sugerido")
+  adminNotes   String?     @map("notas_admin")
+  createdAt    DateTime    @default(now()) @map("criado_em")
+  updatedAt    DateTime    @updatedAt @map("atualizado_em")
 
   user User @relation(fields: [userId], references: [id])
 

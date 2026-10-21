@@ -2,44 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { createQuoteAction } from "@/app/actions/quote";
 
 export default function OrcamentoPage() {
-  const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
-    tipoEvento: "Aniversário",
-    numPessoas: "20",
-    saborMassa: "Chocolate 50%",
-    saborRecheio: "Brigadeiro Gourmet",
-    dataEntrega: "",
-    observacoes: "",
-  });
-
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Formatação da mensagem para o WhatsApp
-    const mensagem = `*Novo Pedido de Encomenda - MegaBite*\n\n` +
-      `*Nome:* ${formData.nome}\n` +
-      `*Telefone:* ${formData.telefone}\n` +
-      `*Evento:* ${formData.tipoEvento}\n` +
-      `*Nº de Convidados:* ${formData.numPessoas} pessoas\n` +
-      `*Massa:* ${formData.saborMassa}\n` +
-      `*Recheio:* ${formData.saborRecheio}\n` +
-      `*Data Pretendida:* ${formData.dataEntrega}\n` +
-      `*Observações:* ${formData.observacoes || "Nenhuma"}`;
+    setLoading(true);
+    setErrorMessage("");
 
-    const numeroWhatsApp = "5528999999999"; // Substituir pelo número oficial futuramente
-    const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
+    const formData = new FormData(e.currentTarget);
+    const result = await createQuoteAction(formData);
 
-    window.open(urlWhatsApp, "_blank");
-    setSubmitted(true);
+    setLoading(false);
+
+    if (result.success && result.urlWhatsApp) {
+      window.open(result.urlWhatsApp, "_blank");
+      setSubmitted(true);
+    } else {
+      setErrorMessage(result.error || "Ocorreu um erro ao enviar o pedido.");
+    }
   };
 
   return (
@@ -57,15 +42,21 @@ export default function OrcamentoPage() {
           Encomendas Personalizadas
         </h1>
         <p style={{ textAlign: "center", color: "#6B3E2E", opacity: 0.8, marginBottom: "2rem", fontSize: "0.95rem" }}>
-          Monte o seu bolo ou kit de festa ideal e solicite seu orçamento diretamente via WhatsApp.
+          Monte o seu bolo ou kit de festa ideal e solicite seu orçamento com persistência segura no sistema e envio via WhatsApp.
         </p>
+
+        {errorMessage && (
+          <div style={{ backgroundColor: "#FDE8E8", color: "#C53030", padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem", textAlign: "center", fontWeight: "bold" }}>
+            {errorMessage}
+          </div>
+        )}
 
         {submitted ? (
           <div style={{ backgroundColor: "#FDF6F0", border: "1px solid #F0BFB3", padding: "2.5rem 2rem", borderRadius: "12px", textAlign: "center" }}>
             <span style={{ fontSize: "3rem", display: "block", marginBottom: "0.5rem" }}>🎉</span>
-            <h2 style={{ color: "#6B3E2E", marginTop: 0, fontSize: "1.5rem" }}>Pedido Formatado!</h2>
+            <h2 style={{ color: "#6B3E2E", marginTop: 0, fontSize: "1.5rem" }}>Pedido Salvo e Formatado!</h2>
             <p style={{ color: "#6B3E2E", opacity: 0.85, lineHeight: "1.5" }}>
-              A sua mensagem foi aberta no WhatsApp. Responderemos o mais breve possível para confirmar todos os detalhes!
+              O seu orçamento foi registrado com sucesso na base de dados e a mensagem foi aberta no WhatsApp.
             </p>
             <button
               onClick={() => setSubmitted(false)}
@@ -106,8 +97,6 @@ export default function OrcamentoPage() {
                   type="text"
                   name="nome"
                   required
-                  value={formData.nome}
-                  onChange={handleChange}
                   placeholder="Ex: Maria Silva"
                   style={{
                     width: "100%",
@@ -128,8 +117,6 @@ export default function OrcamentoPage() {
                   type="text"
                   name="telefone"
                   required
-                  value={formData.telefone}
-                  onChange={handleChange}
                   placeholder="(28) 99999-9999"
                   style={{
                     width: "100%",
@@ -151,8 +138,6 @@ export default function OrcamentoPage() {
                 </label>
                 <select
                   name="tipoEvento"
-                  value={formData.tipoEvento}
-                  onChange={handleChange}
                   style={{
                     width: "100%",
                     padding: "0.75rem",
@@ -176,8 +161,7 @@ export default function OrcamentoPage() {
                 <input
                   type="number"
                   name="numPessoas"
-                  value={formData.numPessoas}
-                  onChange={handleChange}
+                  defaultValue="20"
                   min="5"
                   style={{
                     width: "100%",
@@ -199,8 +183,6 @@ export default function OrcamentoPage() {
                 </label>
                 <select
                   name="saborMassa"
-                  value={formData.saborMassa}
-                  onChange={handleChange}
                   style={{
                     width: "100%",
                     padding: "0.75rem",
@@ -222,8 +204,6 @@ export default function OrcamentoPage() {
                 </label>
                 <select
                   name="saborRecheio"
-                  value={formData.saborRecheio}
-                  onChange={handleChange}
                   style={{
                     width: "100%",
                     padding: "0.75rem",
@@ -249,8 +229,6 @@ export default function OrcamentoPage() {
                 type="date"
                 name="dataEntrega"
                 required
-                value={formData.dataEntrega}
-                onChange={handleChange}
                 style={{
                   width: "100%",
                   padding: "0.75rem",
@@ -270,8 +248,6 @@ export default function OrcamentoPage() {
               <textarea
                 name="observacoes"
                 rows={4}
-                value={formData.observacoes}
-                onChange={handleChange}
                 placeholder="Descreva detalhes como cores, decoração desejada ou restrições alimentares..."
                 style={{
                   width: "100%",
@@ -287,6 +263,7 @@ export default function OrcamentoPage() {
 
             <button
               type="submit"
+              disabled={loading}
               style={{
                 padding: "0.9rem",
                 backgroundColor: "#6B3E2E",
@@ -295,15 +272,16 @@ export default function OrcamentoPage() {
                 borderRadius: "8px",
                 fontSize: "1rem",
                 fontWeight: "bold",
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.7 : 1,
                 marginTop: "0.5rem",
               }}
             >
-              Enviar Pedido via WhatsApp
+              {loading ? "Salvando e Enviando..." : "Enviar Pedido via WhatsApp"}
             </button>
           </form>
         )}
       </div>
     </div>
   );
-} 
+}
