@@ -1,18 +1,23 @@
-"use client";
-
-import { use } from "react";
 import Link from "next/link";
-import { PRODUCTS } from "@/data/products";
+import { prisma } from "@/lib/prisma"; // Certifique-se que o caminho do seu cliente prisma está correto
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const resolvedParams = use(params);
-  const product = PRODUCTS.find((p) => p.id === resolvedParams.id);
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const resolvedParams = await params;
 
-  if (!product) {
+  // Busca o produto diretamente na base de dados com as relações necessárias
+  const product = await prisma.product.findUnique({
+    where: { id: resolvedParams.id },
+    include: {
+      category: true,
+      sizes: true,
+    },
+  });
+
+  if (!product || !product.isActive) {
     return (
       <div style={{ maxWidth: "800px", margin: "4rem auto", textAlign: "center", padding: "0 1rem", color: "#6B3E2E" }}>
         <h2>Produto não encontrado!</h2>
@@ -41,7 +46,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           {/* Imagem do Produto */}
           <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid #F0BFB3" }}>
             <img
-              src={product.image}
+              src={product.imageUrl || "https://via.placeholder.com/400"}
               alt={product.name}
               style={{ width: "100%", height: "400px", objectFit: "cover", display: "block" }}
             />
@@ -50,19 +55,25 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           {/* Informações do Produto */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <span style={{ fontSize: "0.85rem", color: "#B85C38", fontWeight: "bold", textTransform: "uppercase" }}>
-              {product.category}
+              {product.category?.name || "Categoria"}
             </span>
             <h1 style={{ margin: 0, color: "#6B3E2E", fontSize: "2rem" }}>{product.name}</h1>
+            
+            {/* Exibe o preço do primeiro tamanho ou 0 se não tiver */}
             <p style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#6B3E2E", margin: 0 }}>
-              R$ {product.price.toFixed(2).replace(".", ",")}
+              {product.sizes && product.sizes.length > 0 
+                ? `R$ ${Number(product.sizes[0].price).toFixed(2).replace(".", ",")}` 
+                : "Sob consulta"}
             </p>
 
             <p style={{ color: "#6B3E2E", opacity: 0.85, lineHeight: "1.6" }}>{product.description}</p>
 
             <div style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid #F0BFB3" }}>
-              <button
-                onClick={() => alert(`Adicionado ${product.name} ao pedido!`)}
+              <a
+                href={`/orcamento?produto=${product.id}`}
                 style={{
+                  display: "block",
+                  textAlign: "center",
                   width: "100%",
                   padding: "0.875rem",
                   backgroundColor: "#6B3E2E",
@@ -71,15 +82,16 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   borderRadius: "8px",
                   fontSize: "1rem",
                   fontWeight: "bold",
+                  textDecoration: "none",
                   cursor: "pointer",
                 }}
               >
-                Fazer Encomenda / Adicionar
-              </button>
+                Fazer Encomenda / Orçamento
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}

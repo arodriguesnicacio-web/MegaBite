@@ -132,6 +132,20 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.QuoteRequestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  nomeCliente: 'nomeCliente',
+  telefone: 'telefone',
+  tipoProduto: 'tipoProduto',
+  quantidadePessoas: 'quantidadePessoas',
+  dataDesejada: 'dataDesejada',
+  tema: 'tema',
+  observacoes: 'observacoes',
+  status: 'status',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SessionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -228,23 +242,6 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.QuoteRequestScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  productType: 'productType',
-  servings: 'servings',
-  desiredDate: 'desiredDate',
-  flavor: 'flavor',
-  theme: 'theme',
-  restrictions: 'restrictions',
-  details: 'details',
-  status: 'status',
-  quotedPrice: 'quotedPrice',
-  adminNotes: 'adminNotes',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -259,11 +256,6 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-exports.Role = exports.$Enums.Role = {
-  CLIENTE: 'CLIENTE',
-  FUNCIONARIO: 'FUNCIONARIO'
-};
-
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   PENDENTE: 'PENDENTE',
   CONFIRMADA: 'CONFIRMADA',
@@ -273,16 +265,9 @@ exports.OrderStatus = exports.$Enums.OrderStatus = {
   CANCELADA: 'CANCELADA'
 };
 
-exports.QuoteStatus = exports.$Enums.QuoteStatus = {
-  SOLICITADO: 'SOLICITADO',
-  EM_ANALISE: 'EM_ANALISE',
-  ORCAMENTO_ENVIADO: 'ORCAMENTO_ENVIADO',
-  APROVADO: 'APROVADO',
-  RECUSADO: 'RECUSADO'
-};
-
 exports.Prisma.ModelName = {
   User: 'User',
+  QuoteRequest: 'QuoteRequest',
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
@@ -290,8 +275,7 @@ exports.Prisma.ModelName = {
   Product: 'Product',
   ProductSize: 'ProductSize',
   Order: 'Order',
-  OrderItem: 'OrderItem',
-  QuoteRequest: 'QuoteRequest'
+  OrderItem: 'OrderItem'
 };
 
 /**

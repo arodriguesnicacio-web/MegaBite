@@ -26,22 +26,26 @@ export async function createQuoteAction(formData: FormData) {
           name: "Cliente Convidado",
           email: "cliente@megabite.com.br",
           role: "CLIENTE",
+          emailVerified: true,
         },
       });
     }
 
-    // Gravar na tabela quote_request do Neon
+    // Gravar na tabela utilizando os nomes de campos corretos do schema
     await prisma.quoteRequest.create({
       data: {
-        userId: user.id,
-        productType: tipoEvento || "Bolo Personalizado",
-        servings: parseInt(numPessoas, 10) || 10,
-        desiredDate: new Date(dataEntrega),
-        flavor: `Massa: ${saborMassa} / Recheio: ${saborRecheio}`,
-        theme: observacoes || "Nenhum",
-        restrictions: "Nenhuma",
-        details: `Solicitado por ${nome} (${telefone})`,
-        status: "SOLICITADO",
+        user: {
+          connect: {
+            id: user.id,
+          },
+        },
+        nomeCliente: nome,
+        telefone: telefone,
+        tipoProduto: tipoEvento || "Bolo Personalizado",
+        quantidadePessoas: parseInt(numPessoas, 10) || 10,
+        dataDesejada: new Date(dataEntrega),
+        tema: observacoes || "Nenhum",
+        observacoes: `Massa: ${saborMassa} / Recheio: ${saborRecheio} - Obs: ${observacoes || "Nenhuma"}`,
       },
     });
 

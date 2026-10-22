@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/app/generated/prisma"
@@ -31,23 +30,39 @@ enum QuoteStatus {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
+  id            String         @id @default(cuid())
+  name          String?
+  email         String?        @unique
+  emailVerified Boolean
   image         String?
   phone         String?
-  role          Role     @default(CLIENTE)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  sessions      Session[]
-  accounts      Account[]
-  products      Product[]      @relation("UserProducts")
+  role          String         @default("USER")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
   orders        Order[]
   quoteRequests QuoteRequest[]
+  products      Product[]      @relation("UserProducts")
+  sessions      Session[]
+  accounts      Account[]
+}
 
-  @@map("user")
+model QuoteRequest {
+  id                String    @id @default(cuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  nomeCliente       String?
+  telefone          String?
+  tipoProduto       String?
+  quantidadePessoas Int?
+  dataDesejada      DateTime?
+  tema              String?
+  observacoes       String?
+  status            String    @default("SOLICITADO")
+  createdAt         DateTime  @default(now())
+
+  @@map("quote_request")
 }
 
 model Session {
@@ -110,7 +125,6 @@ model Category {
 
   @@map("category")
 }
-
 model Product {
   id          String   @id @default(cuid())
   name        String
@@ -122,12 +136,12 @@ model Product {
   isAvailable Boolean  @default(true)
   isActive    Boolean  @default(true)
   categoryId  String
-  createdById String
+  createdById String?  // <-- Alterado para opcional (?) para evitar erros de chave estrangeira
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   category   Category      @relation(fields: [categoryId], references: [id])
-  createdBy  User          @relation("UserProducts", fields: [createdById], references: [id])
+  createdBy  User?         @relation("UserProducts", fields: [createdById], references: [id], onDelete: SetNull)
   sizes      ProductSize[]
   orderItems OrderItem[]
 
@@ -137,9 +151,9 @@ model Product {
 model ProductSize {
   id        String   @id @default(cuid())
   productId String
-  sizeName  String // Ex: "P", "M", "G", "Unidade", "Caixa c/ 6"
+  sizeName  String 
   price     Decimal  @db.Decimal(10, 2)
-  weight    String? // Ex: "500g", "1kg"
+  weight    String? 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -182,25 +196,4 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id])
 
   @@map("order_item")
-}
-
-model QuoteRequest {
-  id           String      @id @default(cuid())
-  userId       String
-  productType  String      @map("tipo_produto")
-  servings     Int         @map("quantidade_pessoas")
-  desiredDate  DateTime    @map("data_desejada")
-  flavor       String      @map("sabor")
-  theme        String?     @map("tema")
-  restrictions String?     @map("restricoes")
-  details      String      @map("detalhes")
-  status       QuoteStatus @default(SOLICITADO)
-  quotedPrice  Decimal?    @db.Decimal(10, 2)@map("preco_sugerido")
-  adminNotes   String?     @map("notas_admin")
-  createdAt    DateTime    @default(now()) @map("criado_em")
-  updatedAt    DateTime    @updatedAt @map("atualizado_em")
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@map("quote_request")
 }

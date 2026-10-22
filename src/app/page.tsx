@@ -1,9 +1,29 @@
 import Link from "next/link";
-import { PRODUCTS } from "@/data/products";
+import { prisma } from "@/lib/prisma";
 import ProductCard from "@/app/components/ProductCard";
 
-export default function HomePage() {
-  const featuredProducts = PRODUCTS.slice(0, 3);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  // Buscar os produtos do banco de dados para os destaques (exatamente 3 cards)
+  const produtosDoBanco = await prisma.product.findMany({
+    include: {
+      category: true,
+      sizes: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 3, // Exibe 3 produtos em destaque
+  });
+
+  const featuredProducts = produtosDoBanco.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    category: p.category.name,
+    price: p.sizes.length > 0 ? Number(p.sizes[0].price) : 0,
+    image: p.imageUrl || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60",
+    slug: p.id,
+  }));
 
   const especialidades = [
     { nome: "Bolos", icone: "🎂" },
@@ -132,12 +152,12 @@ export default function HomePage() {
         </div>
 
         <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
-        <Link
-  href="/produtos"
-  style={{ color: "#6B3E2E", fontWeight: "bold", textDecoration: "underline", fontSize: "1rem" }}
->
-  Ver todos os produtos do catálogo →
-</Link> 
+          <Link
+            href="/produtos"
+            style={{ color: "#6B3E2E", fontWeight: "bold", textDecoration: "underline", fontSize: "1rem" }}
+          >
+            Ver todos os produtos do catálogo →
+          </Link> 
         </div>
       </section>
 
@@ -177,4 +197,4 @@ export default function HomePage() {
       </section>
     </div>
   );
-} 
+}

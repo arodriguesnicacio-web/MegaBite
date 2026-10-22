@@ -13,6 +13,7 @@ async function main() {
       email: "admin@megabite.com.br",
       phone: "(28) 99999-8888",
       role: "FUNCIONARIO",
+      emailVerified: true, // <-- Adicione esta linha aqui
     },
   });
 
