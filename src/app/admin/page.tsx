@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { updateQuoteStatusAction, StatusOrcamento } from "../actions/actions";
 import Link from "next/link";
+import StatusUpdater from "./StatusUpdater";
 
 export default async function AdminDashboardPage() {
-  let quotes: any[] = [];
+  let quotes: Array<Record<string, any>> = [];
   try {
     // Consulta SQL direta para evitar conflitos de mapeamento do Prisma Client
     quotes = await prisma.$queryRaw`SELECT * FROM quote_request`;
@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {quotes.map((item: any) => {
+            {quotes.map((item: Record<string, any>) => {
               const badge = getStatusBadgeStyle(item.status);
               
               const nome = item.nome_cliente || item.nomeCliente || "Cliente não identificado";
@@ -140,34 +140,7 @@ export default async function AdminDashboardPage() {
                         {item.status}
                       </span>
 
-                      <form
-                        action={async (formData) => {
-                          "use server";
-                          const newStatus = formData.get("status") as StatusOrcamento;
-                          await updateQuoteStatusAction(item.id, newStatus);
-                        }}
-                      >
-                        <select
-                          name="status"
-                          defaultValue={item.status}
-                          onChange={(e) => e.target.form?.requestSubmit()}
-                          style={{
-                            padding: "0.4rem 0.8rem",
-                            borderRadius: "8px",
-                            border: "1px solid #6B3E2E",
-                            backgroundColor: "#FFFCF8",
-                            color: "#6B3E2E",
-                            fontWeight: "bold",
-                            fontSize: "0.85rem",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <option value="SOLICITADO">SOLICITADO</option>
-                          <option value="EM_ANALISE">EM_ANALISE</option>
-                          <option value="APROVADO">APROVADO</option>
-                          <option value="RECUSADO">RECUSADO</option>
-                        </select>
-                      </form>
+                      <StatusUpdater quoteId={item.id} initialStatus={item.status} />
                     </div>
                   </div>
 

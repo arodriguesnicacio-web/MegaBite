@@ -9,6 +9,9 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, isPending } = useSession();
 
+  // Verifica se o utilizador tem a permissão de FUNCIONARIO
+  const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
+
   return (
     <header className="header">
       <div className="container header-container">
@@ -30,9 +33,31 @@ export default function Header() {
             <span style={{ fontSize: '0.85rem', color: '#666' }}>A carregar...</span>
           ) : session ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {/* Botão Painel Admin no Desktop (Apenas para FUNCIONARIO) */}
+              {isFuncionario && (
+                <Link
+                  href="/admin"
+                  style={{
+                    backgroundColor: '#6B3E2E',
+                    color: '#FFF',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '20px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  ⚙️ Painel Admin
+                </Link>
+              )}
+
               <span style={{ fontSize: '0.9rem' }}>
                 Olá, <strong>{session.user.name || session.user.email}</strong>
               </span>
+
               <button
                 onClick={() => signOut()}
                 className="btn btn-outline"
@@ -64,6 +89,18 @@ export default function Header() {
           <Link href="/produtos" className="nav-link" onClick={() => setIsMenuOpen(false)}>Catálogo</Link>
           <Link href="/orcamento" className="nav-link" onClick={() => setIsMenuOpen(false)}>Encomendas</Link>
           <Link href="/sobre" className="nav-link" onClick={() => setIsMenuOpen(false)}>Sobre Nós</Link>
+
+          {/* Link direto no menu mobile para FUNCIONARIO */}
+          {isFuncionario && (
+            <Link
+              href="/admin"
+              className="nav-link"
+              style={{ fontWeight: 'bold', color: '#6B3E2E' }}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              ⚙️ Painel Admin
+            </Link>
+          )}
           
           <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
             {session ? (

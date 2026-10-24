@@ -17,7 +17,7 @@ export default function Footer() {
               <li><Link href="/">Início</Link></li>
               <li><Link href="/produtos">Catálogo Completo</Link></li>
               <li><Link href="/orcamento">Solicitar Orçamento</Link></li>
-              <li><Link href="/login">Área do Cliente / Admin</Link></li>
+              <li><Link href="/login">Área do Cliente</Link></li>
             </ul>
           </div>
 
