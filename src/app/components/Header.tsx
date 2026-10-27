@@ -1,121 +1,66 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useCart } from '@/context/CartContext';
-import { authClient } from '@/lib/auth-client';
+import { useSession, signOut } from "@/lib/auth-client";
+import { useCart } from "@/context/CartContext";
+import './Header.css';
 
 export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session, isPending } = useSession();
   const { totalItems } = useCart();
-  const { data: session } = authClient.useSession();
+
+  // Verifica se o utilizador tem a permissão de FUNCIONARIO
+  const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
 
   return (
-    <header
-      style={{
-        width: '100%',
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #f3f4f6',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '0 16px',
-          height: '64px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        {/* Logo Original */}
-        <Link
-          href="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            textDecoration: 'none',
-          }}
-        >
-          <span
-            style={{
-              fontSize: '20px',
-              fontWeight: 'bold',
-              color: '#78350f',
-            }}
-          >
-            MegaBite
-          </span>
+    <header className="header">
+      <div className="container header-container">
+        <Link href="/" className="logo">
+          <span className="logo-icon">🍰</span>
+          <span>MegaBite</span>
+          <span className="logo-tag">Artesanal</span>
         </Link>
 
-        {/* Navigation & Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <nav
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '24px',
-              marginRight: '8px',
-            }}
-          >
-            <Link
-              href="/"
-              style={{
-                color: '#374151',
-                textDecoration: 'none',
-                fontWeight: '500',
-              }}
-            >
-              Catálogo
-            </Link>
-            <Link
-              href="/sobre"
-              style={{
-                color: '#374151',
-                textDecoration: 'none',
-                fontWeight: '500',
-              }}
-            >
-              Sobre
-            </Link>
-          </nav>
+        <nav className="nav-desktop">
+          <Link href="/" className="nav-link">Início</Link>
+          <Link href="/produtos" className="nav-link">Catálogo</Link>
+          <Link href="/orcamento" className="nav-link">Encomendas</Link>
+          <Link href="/sobre" className="nav-link">Sobre Nós</Link>
+        </nav>
 
-          {/* Botão do Carrinho com Contador (Antes do Botão de Entrar) */}
+        <div className="header-actions">
+          {/* Botão do Carrinho */}
           <Link
             href="/carrinho"
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              backgroundColor: '#78350f',
-              color: '#ffffff',
-              padding: '8px 16px',
-              borderRadius: '9999px',
-              fontWeight: '600',
-              fontSize: '14px',
+              gap: '0.4rem',
+              backgroundColor: '#6B3E2E',
+              color: '#FFF',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '20px',
               textDecoration: 'none',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              fontWeight: 'bold',
+              fontSize: '0.85rem'
             }}
           >
             <span>🛒 Carrinho</span>
             {totalItems > 0 && (
               <span
                 style={{
-                  backgroundColor: '#ffffff',
-                  color: '#78350f',
-                  borderRadius: '9999px',
-                  width: '20px',
-                  height: '20px',
+                  backgroundColor: '#FFF',
+                  color: '#6B3E2E',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
                 }}
               >
                 {totalItems}
@@ -123,38 +68,117 @@ export default function Header() {
             )}
           </Link>
 
-          {/* Botão de Login / Perfil */}
-          {session ? (
-            <Link
-              href="/perfil"
-              style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#78350f',
-                border: '1px solid rgba(120, 53, 15, 0.2)',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-              }}
-            >
-              Minha Conta
-            </Link>
+          {isPending ? (
+            <span style={{ fontSize: '0.85rem', color: '#666' }}>A carregar...</span>
+          ) : session ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {/* Botão Painel Admin no Desktop (Apenas para FUNCIONARIO) */}
+              {isFuncionario && (
+                <Link
+                  href="/admin"
+                  style={{
+                    backgroundColor: '#6B3E2E',
+                    color: '#FFF',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '20px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  ⚙️ Painel Admin
+                </Link>
+              )}
+
+              <span style={{ fontSize: '0.9rem' }}>
+                Olá, <strong>{session.user.name || session.user.email}</strong>
+              </span>
+
+              <button
+                onClick={() => signOut()}
+                className="btn btn-outline"
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Sair
+              </button>
+            </div>
           ) : (
-            <Link
-              href="/login"
-              style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                padding: '8px 12px',
-                textDecoration: 'none',
-              }}
-            >
+            <Link href="/login" className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
               Entrar
             </Link>
           )}
+
+          <button
+            className="mobile-toggle"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Abrir Menu"
+          >
+            {isMenuOpen ? '✕' : '☰'}
+          </button>
         </div>
       </div>
+
+      {/* Menu Mobile */}
+      {isMenuOpen && (
+        <div className="mobile-menu open">
+          <Link href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Início</Link>
+          <Link href="/produtos" className="nav-link" onClick={() => setIsMenuOpen(false)}>Catálogo</Link>
+          <Link href="/orcamento" className="nav-link" onClick={() => setIsMenuOpen(false)}>Encomendas</Link>
+          <Link href="/sobre" className="nav-link" onClick={() => setIsMenuOpen(false)}>Sobre Nós</Link>
+          
+          {/* Carrinho no Menu Mobile */}
+          <Link 
+            href="/carrinho" 
+            className="nav-link" 
+            style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }} 
+            onClick={() => setIsMenuOpen(false)}
+          >
+            🛒 Carrinho ({totalItems})
+          </Link>
+
+          {/* Link direto no menu mobile para FUNCIONARIO */}
+          {isFuncionario && (
+            <Link
+              href="/admin"
+              className="nav-link"
+              style={{ fontWeight: 'bold', color: '#6B3E2E' }}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              ⚙️ Painel Admin
+            </Link>
+          )}
+          
+          <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+            {session ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span className="nav-link">Olá, <strong>{session.user.name || session.user.email}</strong></span>
+                <button
+                  onClick={() => {
+                    signOut();
+                    setIsMenuOpen(false);
+                  }}
+                  className="btn btn-outline"
+                  style={{ width: '100%', padding: '0.5rem' }}
+                >
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="btn btn-outline"
+                style={{ display: 'block', textAlign: 'center', width: '100%', padding: '0.5rem' }}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Entrar
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 } 
