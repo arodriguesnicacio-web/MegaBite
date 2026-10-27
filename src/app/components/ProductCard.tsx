@@ -10,6 +10,7 @@ interface ProductCardProps {
     description?: string;
     category?: string;
     imageUrl?: string;
+    price?: number;
     isAvailable?: boolean;
     sizes?: { id: string; name: string; price: number }[];
   };
@@ -18,7 +19,22 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart() as any;
   const isEsgotado = product.isAvailable === false;
-  const mainSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : null;
+
+  // Garante que existe sempre um tamanho ou preço para enviar ao carrinho
+  const mainSize = (product.sizes && product.sizes.length > 0)
+    ? product.sizes[0]
+    : { name: 'Padrão', price: product.price || 0 };
+
+  const handleAddToCart = () => {
+    addToCart({
+      productId: product.id,
+      productName: product.name,
+      sizeName: mainSize.name,
+      price: mainSize.price,
+      quantity: 1,
+    });
+    alert(`"${product.name}" foi adicionado ao carrinho!`);
+  };
 
   return (
     <div
@@ -33,9 +49,9 @@ export function ProductCard({ product }: ProductCardProps) {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        height: '100%',
       }}
     >
-      {/* Badge Visível de Esgotado */}
       {isEsgotado && (
         <span
           style={{
@@ -49,6 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
             padding: '4px 8px',
             borderRadius: '4px',
             letterSpacing: '0.5px',
+            zIndex: 2,
           }}
         >
           ESGOTADO
@@ -56,29 +73,38 @@ export function ProductCard({ product }: ProductCardProps) {
       )}
 
       <div>
+        {/* RESTAURAÇÃO DAS IMAGENS DO BLOB */}
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            style={{
+              width: '100%',
+              height: '180px',
+              objectFit: 'cover',
+              borderRadius: '8px',
+              marginBottom: '12px',
+            }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: '180px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
+            Sem imagem
+          </div>
+        )}
+
         <h3 style={{ margin: '0 0 6px', color: '#333', fontSize: '18px' }}>{product.name}</h3>
         <p style={{ color: '#666', fontSize: '13px', margin: '0 0 12px', minHeight: '36px' }}>{product.description}</p>
       </div>
 
       <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontWeight: 'bold', color: '#6B3E2E', fontSize: '16px' }}>
-          {mainSize ? `R$ ${mainSize.price.toFixed(2).replace('.', ',')}` : 'Sob Consulta'}
+          R$ {Number(mainSize.price).toFixed(2).replace('.', ',')}
         </span>
 
         <button
           type="button"
-          disabled={isEsgotado || !mainSize}
-          onClick={() => {
-            if (mainSize) {
-              addToCart({
-                productId: product.id,
-                productName: product.name,
-                sizeName: mainSize.name,
-                price: mainSize.price,
-                quantity: 1,
-              });
-            }
-          }}
+          disabled={isEsgotado}
+          onClick={handleAddToCart}
           style={{
             padding: '8px 14px',
             backgroundColor: isEsgotado ? '#6c757d' : '#6B3E2E',

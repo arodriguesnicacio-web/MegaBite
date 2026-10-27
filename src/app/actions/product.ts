@@ -35,12 +35,7 @@ export async function createProduct(formData: FormData) {
           imageUrl,
           isAvailable: true,
           sizes: {
-            create: [
-              {
-                name: 'Padrão',
-                price: price,
-              },
-            ],
+            create: [{ name: 'Padrão', price: price }],
           },
         },
       });
@@ -91,9 +86,7 @@ export async function updateProduct(idOrFormData: string | FormData, formDataPar
     const name = (formData.get('name') as string) || undefined;
     const description = (formData.get('description') as string) || undefined;
     const imageUrl = (formData.get('imageUrl') as string) || undefined;
-    const priceStr = formData.get('price') as string;
-    const price = priceStr ? parseFloat(priceStr) : undefined;
-
+    
     await (prisma.product as any).update({
       where: { id: productId },
       data: {
@@ -125,9 +118,9 @@ export async function deleteProduct(productId: string) {
       return { success: false, error: 'Acesso negado. Apenas administradores podem excluir produtos.' };
     }
 
-    await (prisma.product as any).update({
+    // EXCLUSÃO FÍSICA E DEFINITIVA DO BANCO DE DADOS
+    await (prisma.product as any).delete({
       where: { id: productId },
-      data: { isAvailable: false },
     });
 
     revalidatePath('/admin');
@@ -136,8 +129,8 @@ export async function deleteProduct(productId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Erro ao excluir produto:', error);
-    return { success: false, error: 'Não foi possível excluir o produto.' };
+    console.error('Erro ao excluir produto (Possivelmente vinculado a um pedido):', error);
+    return { success: false, error: 'Não é possível excluir o produto porque ele já está vinculado a um pedido de um cliente.' };
   }
 }
 
