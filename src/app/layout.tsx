@@ -1,12 +1,11 @@
-import type { Metadata } from 'next';
+import React from 'react';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 
-export const metadata: Metadata = {
-  title: 'MegaBite | Confeitaria Artesanal',
-  description: 'Catálogo e encomendas de bolos, doces e tortas artesanais.',
+export const metadata = {
+  title: 'MegaBite - Confeitaria Artesanal',
+  description: 'Os melhores bolos e doces para o seu evento',
 };
 
 export default function RootLayout({
@@ -16,9 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>
+      <body style={{ margin: 0, padding: 0, fontFamily: 'system-ui, sans-serif', backgroundColor: '#fcf8f5' }}>
         <CartProvider>
-          {children}
+          <Header />
+          <main style={{ minHeight: 'calc(100vh - 160px)' }}>
+            {children}
+          </main>
+          <Footer />
         </CartProvider>
       </body>
     </html>
