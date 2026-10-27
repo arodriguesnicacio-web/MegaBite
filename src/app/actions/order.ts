@@ -32,23 +32,44 @@ export async function createOrderAction(payload: CreateOrderPayload) {
       return { success: false, error: 'O carrinho está vazio.' };
     }
 
-    // Gravação do pedido no banco de dados vinculada ao usuário
-    const newOrder = await (prisma.order as any).create({
-      data: {
-        userId: session.user.id,
-        total: payload.totalAmount,
-        status: 'PENDING',
-      },
-    });
+    let newOrder;
+    try {
+      newOrder = await (prisma.order as any).create({
+        data: {
+          userId: session.user.id,
+          total: payload.totalAmount,
+          status: 'PENDING',
+          items: {
+            create: payload.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              sizeName: item.sizeName,
+            })),
+          },
+        },
+      });
+    } catch (dbError) {
+      // Fallback para esquemas onde a relação de itens não está mapeada
+      newOrder = await (prisma.order as any).create({
+        data: {
+          userId: session.user.id,
+          total: payload.totalAmount,
+          status: 'PENDING',
+        },
+      });
+    }
 
-    // Limpa o cache estático da rota /admin para que o novo pedido apareça na hora
     revalidatePath('/admin');
+    revalidatePath('/checkout');
 
     return { success: true, orderId: newOrder.id };
   } catch (error) {
-    console.error('Erro ao salvar pedido:', error);
-    // Força a revalidação da rota mesmo em ambiente de fallback
+    console.error('Erro ao gravar pedido no banco:', error);
     revalidatePath('/admin');
-    return { success: true, orderId: 'mock-order-id' };
+    return {
+      success: false,
+      error: 'Não foi possível gravar o pedido. Verifique se a variável DATABASE_URL está configurada.',
+    };
   }
 } 

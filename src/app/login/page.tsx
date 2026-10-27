@@ -18,7 +18,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirecionamento automático caso o usuário já esteja autenticado
   useEffect(() => {
     if (!isPending && session) {
       router.replace(redirectTo);
@@ -32,14 +31,27 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        const res = await signUp.email({
+        // 1. Cria a conta no sistema
+        const signUpRes = await signUp.email({
           email,
           password,
           name,
         });
 
-        if (res.error) {
-          setError(res.error.message || 'Erro ao realizar cadastro.');
+        if (signUpRes.error) {
+          setError(signUpRes.error.message || 'Erro ao realizar cadastro.');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Autentica automaticamente para salvar os cookies de sessão antes do redirecionamento
+        const signInRes = await signIn.email({
+          email,
+          password,
+        });
+
+        if (signInRes.error) {
+          setError('Cadastro concluído! Por favor, informe seus dados para entrar.');
         } else {
           router.replace(redirectTo);
         }
@@ -62,12 +74,11 @@ function LoginForm() {
     }
   };
 
-  // Se a sessão já foi identificada ou está carregando, bloqueia o formulário e redireciona
   if (isPending || session) {
     return (
       <div style={{ maxWidth: '400px', margin: '80px auto', textAlign: 'center', padding: '20px' }}>
         <p style={{ color: '#6B3E2E', fontWeight: 'bold', fontSize: '18px' }}>
-          {isPending ? 'Verificando sessão...' : 'Sessão identificada! Redirecionando para a compra...'}
+          {isPending ? 'Verificando sessão...' : 'Sessão iniciada! Direcionando para o checkout...'}
         </p>
       </div>
     );
@@ -184,7 +195,7 @@ function LoginForm() {
             marginTop: '8px',
           }}
         >
-          {loading ? 'Carregando...' : isSignUp ? 'Cadastrar' : 'Entrar'}
+          {loading ? 'Processando...' : isSignUp ? 'Cadastrar e Continuar' : 'Entrar'}
         </button>
       </form>
 
