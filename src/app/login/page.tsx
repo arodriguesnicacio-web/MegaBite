@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { signIn, signUp } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from 'next/navigation';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,9 @@ export default function LoginPage() {
   
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const searchParams = useSearchParams();
+const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +134,7 @@ export default function LoginPage() {
         onClick={() => {
           setIsSignUp(!isSignUp);
           setError("");
+          router.push(redirectTo); 
         }}
         style={{
           marginTop: "15px",

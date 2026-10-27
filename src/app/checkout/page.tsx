@@ -1,29 +1,68 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { authClient } from '@/lib/auth-client';
+import { useSession } from '@/lib/auth-client';
+import { createOrderAction } from '@/app/actions/order';
 
 export default function CheckoutPage() {
-  const { items, subtotal } = useCart();
-  
-  // Obtenção da sessão de autenticação em tempo real via Better Auth
-  const { data: session, isPending } = authClient.useSession();
+  const { items, subtotal, clearCart } = useCart();
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleConfirmOrder = async () => {
+    if (!session) {
+      router.push('/login?redirect=/checkout');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage('');
+
+      // Chama a Server Action para salvar o pedido no banco de dados
+      const result = await createOrderAction({
+        items: items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          sizeName: item.sizeName,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        totalAmount: subtotal,
+      });
+
+      if (result.success) {
+        clearCart();
+        alert('Pedido realizado com sucesso!');
+        router.push('/perfil'); // Ou redireciona para a tela de confirmação/pedidos
+      } else {
+        setErrorMessage(result.error || 'Erro ao processar o pedido. Tente novamente.');
+      }
+    } catch (err) {
+      setErrorMessage('Ocorreu um erro inesperado ao enviar a sua encomenda.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
       <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
         <h1 style={{ color: '#333', marginBottom: '16px' }}>Nenhum item selecionado</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>
-          O seu carrinho está vazio. Adicione um bolo ou doce antes de prosseguir com o pedido.
+          O seu carrinho está vazio. Adicione um bolo ou doce antes de prosseguir.
         </p>
         <Link
-          href="/"
+          href="/produtos"
           style={{
             display: 'inline-block',
             padding: '12px 24px',
-            backgroundColor: '#8b4513',
+            backgroundColor: '#6B3E2E',
             color: '#ffffff',
             borderRadius: '8px',
             textDecoration: 'none',
@@ -48,7 +87,13 @@ export default function CheckoutPage() {
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
       <h1 style={{ color: '#333', marginBottom: '24px' }}>Finalização do Pedido</h1>
 
-      {/* Resumo dos Itens do Carrinho */}
+      {errorMessage && (
+        <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px' }}>
+          {errorMessage}
+        </div>
+      )}
+
+      {/* Resumo dos Itens */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -58,11 +103,11 @@ export default function CheckoutPage() {
           marginBottom: '24px',
         }}
       >
-        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#8b4513' }}>Resumo dos Itens</h2>
+        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#6B3E2E' }}>Resumo dos Itens</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           {items.map((item) => (
             <div
-              key={item.id}
+              key={`${item.productId}-${item.sizeName}`}
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -79,11 +124,11 @@ export default function CheckoutPage() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
           <span>Total:</span>
-          <span style={{ color: '#8b4513' }}>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+          <span style={{ color: '#6B3E2E' }}>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
         </div>
       </div>
 
-      {/* Verificação da Autenticação do Usuário */}
+      {/* Bloqueio ou Liberação do Pedido */}
       {!session ? (
         <div
           style={{
@@ -96,14 +141,14 @@ export default function CheckoutPage() {
         >
           <h3 style={{ margin: '0 0 12px', color: '#856404' }}>Identificação Necessária</h3>
           <p style={{ color: '#856404', marginBottom: '20px' }}>
-            Para concluir a sua encomenda e garantir a entrega, precisa de entrar na sua conta ou criar um cadastro.
+            Para concluir a sua encomenda e salvar no sistema, entre na sua conta ou cadastre-se.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <Link
-              href="/login"
+              href="/login?redirect=/checkout"
               style={{
                 padding: '12px 24px',
-                backgroundColor: '#8b4513',
+                backgroundColor: '#6B3E2E',
                 color: '#ffffff',
                 borderRadius: '6px',
                 textDecoration: 'none',
@@ -142,24 +187,25 @@ export default function CheckoutPage() {
               Cliente autenticado: {session.user.name || session.user.email}
             </p>
             <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-              Endereço de e-mail: {session.user.email}
+              E-mail para confirmação: {session.user.email}
             </p>
           </div>
           <button
             type="button"
-            onClick={() => alert('Pedido enviado com sucesso!')}
+            onClick={handleConfirmOrder}
+            disabled={isSubmitting}
             style={{
               padding: '14px 28px',
-              backgroundColor: '#28a745',
+              backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
               fontSize: '16px',
               fontWeight: 'bold',
-              cursor: 'pointer',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
-            Confirmar e Enviar Encomenda →
+            {isSubmitting ? 'Enviando Pedido...' : 'Confirmar e Enviar Encomenda →'}
           </button>
         </div>
       )}
