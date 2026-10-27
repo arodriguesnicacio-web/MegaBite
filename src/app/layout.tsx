@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import './globals.css';
+import { CartProvider } from '@/context/CartContext';
 
 export const metadata: Metadata = {
   title: 'MegaBite | Confeitaria Artesanal',
@@ -16,9 +17,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <CartProvider>
+          {children}
+        </CartProvider>
       </body>
     </html>
   );
