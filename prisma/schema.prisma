@@ -43,7 +43,7 @@ model Order {
   total             Float
   status            String      @default("PENDING")
   fulfillmentMethod String      @default("RETIRADA")
-  requestedDate     DateTime
+  requestedDate     DateTime?   @default(now())
   deliveryAddress   String?
   notes             String?
   items             OrderItem[]
