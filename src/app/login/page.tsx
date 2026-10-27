@@ -1,14 +1,15 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { signIn, signUp } from '@/lib/auth-client';
+import { signIn, signUp, useSession } from '@/lib/auth-client';
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const { data: session, isPending } = useSession();
+
+  const redirectTo = searchParams.get('redirect') || '/checkout';
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
@@ -17,6 +18,13 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Redirecionamento automático caso o usuário já esteja autenticado
+  useEffect(() => {
+    if (!isPending && session) {
+      router.replace(redirectTo);
+    }
+  }, [session, isPending, router, redirectTo]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -24,7 +32,6 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        // Fluxo de Cadastro
         const res = await signUp.email({
           email,
           password,
@@ -34,10 +41,9 @@ function LoginForm() {
         if (res.error) {
           setError(res.error.message || 'Erro ao realizar cadastro.');
         } else {
-          router.push(redirectTo);
+          router.replace(redirectTo);
         }
       } else {
-        // Fluxo de Login
         const res = await signIn.email({
           email,
           password,
@@ -46,7 +52,7 @@ function LoginForm() {
         if (res.error) {
           setError(res.error.message || 'E-mail ou senha incorretos.');
         } else {
-          router.push(redirectTo);
+          router.replace(redirectTo);
         }
       }
     } catch (err) {
@@ -55,6 +61,17 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  // Se a sessão já foi identificada ou está carregando, bloqueia o formulário e redireciona
+  if (isPending || session) {
+    return (
+      <div style={{ maxWidth: '400px', margin: '80px auto', textAlign: 'center', padding: '20px' }}>
+        <p style={{ color: '#6B3E2E', fontWeight: 'bold', fontSize: '18px' }}>
+          {isPending ? 'Verificando sessão...' : 'Sessão identificada! Redirecionando para a compra...'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

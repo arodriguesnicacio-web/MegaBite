@@ -26,7 +26,7 @@ export default function CheckoutPage() {
       setErrorMessage('');
 
       const result = await createOrderAction({
-        items: items.map(item => ({
+        items: items.map((item) => ({
           productId: item.productId,
           productName: item.productName,
           sizeName: item.sizeName,
@@ -38,7 +38,6 @@ export default function CheckoutPage() {
 
       if (result.success) {
         clearCart();
-        // Redireciona para a página de sucesso após finalizar
         router.push('/checkout/sucesso');
       } else {
         setErrorMessage(result.error || 'Não foi possível concluir o pedido.');
@@ -93,7 +92,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Resumo dos Itens */}
+      {/* Resumo do Pedido */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -128,7 +127,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Verificação da Conta do Cliente */}
+      {/* Condicional de Login */}
       {!session ? (
         <div
           style={{
