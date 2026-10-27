@@ -1,115 +1,153 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn, signUp } from "@/lib/auth-client";
+import React, { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { signIn, signUp } from '@/lib/auth-client';
 
-
-export default function LoginPage() {
-  const router = useRouter();
-  const [isSignUp, setIsSignUp] = useState(false);
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
+function LoginForm() {
   const searchParams = useSearchParams();
-const redirectTo = searchParams.get('redirect') || '/';
+  const router = useRouter();
+  const redirectTo = searchParams.get('redirect') || '/';
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
       if (isSignUp) {
+        // Fluxo de Cadastro
         const res = await signUp.email({
           email,
           password,
           name,
-          phone,
         });
 
         if (res.error) {
-          setError(res.error.message || "Erro ao criar conta.");
+          setError(res.error.message || 'Erro ao realizar cadastro.');
         } else {
-          router.push("/");
-          router.refresh();
+          router.push(redirectTo);
         }
       } else {
+        // Fluxo de Login
         const res = await signIn.email({
           email,
           password,
         });
 
         if (res.error) {
-          setError(res.error.message || "Email ou senha incorretos.");
+          setError(res.error.message || 'E-mail ou senha incorretos.');
         } else {
-          router.push("/");
-          router.refresh();
+          router.push(redirectTo);
         }
       }
-    } catch {
-      setError("Ocorreu um erro inesperado. Tente novamente.");
+    } catch (err) {
+      setError('Ocorreu um erro ao processar sua solicitação.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "40px auto", padding: "20px", border: "1px solid #ccc", borderRadius: "8px" }}>
-      <h2>{isSignUp ? "Criar Conta" : "Entrar"}</h2>
-      
-      {error && <p style={{ color: "red", fontSize: "14px" }}>{error}</p>}
+    <div
+      style={{
+        maxWidth: '400px',
+        margin: '60px auto',
+        padding: '30px',
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+      }}
+    >
+      <h1
+        style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          color: '#6B3E2E',
+          marginBottom: '20px',
+          textAlign: 'center',
+        }}
+      >
+        {isSignUp ? 'Criar Conta no MegaBite' : 'Entrar no MegaBite'}
+      </h1>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      {error && (
+        <div
+          style={{
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            fontSize: '14px',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {isSignUp && (
-          <>
-            <div>
-              <label style={{ display: "block", marginBottom: "4px" }}>Nome:</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "4px" }}>Telefone:</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-              />
-            </div>
-          </>
+          <div>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 'bold' }}>
+              Nome Completo
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+              }}
+            />
+          </div>
         )}
 
         <div>
-          <label style={{ display: "block", marginBottom: "4px" }}>Email:</label>
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 'bold' }}>
+            E-mail
+          </label>
           <input
             type="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+            }}
           />
         </div>
 
         <div>
-          <label style={{ display: "block", marginBottom: "4px" }}>Palavra-passe:</label>
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 'bold' }}>
+            Senha
+          </label>
           <input
             type="password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+            }}
           />
         </div>
 
@@ -117,37 +155,55 @@ const redirectTo = searchParams.get('redirect') || '/';
           type="submit"
           disabled={loading}
           style={{
-            padding: "10px",
-            backgroundColor: "#106d41",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "bold",
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#6B3E2E',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            marginTop: '8px',
           }}
         >
-          {loading ? "A carregar..." : isSignUp ? "Cadastrar" : "Entrar"}
+          {loading ? 'Carregando...' : isSignUp ? 'Cadastrar' : 'Entrar'}
         </button>
       </form>
 
-      <button
-        onClick={() => {
-          setIsSignUp(!isSignUp);
-          setError("");
-          router.push(redirectTo); 
-        }}
-        style={{
-          marginTop: "15px",
-          background: "none",
-          border: "none",
-          color: "#0066cc",
-          cursor: "pointer",
-          textDecoration: "underline",
-          width: "100%",
-        }}
-      >
-        {isSignUp ? "Já tem uma conta? Inicie sessão" : "Não tem conta? Registe-se"}
-      </button>
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setIsSignUp(!isSignUp);
+            setError('');
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6B3E2E',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastre-se'}
+        </button>
+      </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ maxWidth: '400px', margin: '60px auto', textAlign: 'center', padding: '20px' }}>
+          <p style={{ color: '#666' }}>Carregando formulário...</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 } 

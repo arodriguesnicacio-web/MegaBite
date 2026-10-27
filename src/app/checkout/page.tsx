@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const { data: session, isPending } = useSession();
   const router = useRouter();
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -25,7 +25,6 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
       setErrorMessage('');
 
-      // Envia os itens para validação e criação no servidor
       const result = await createOrderAction({
         items: items.map(item => ({
           productId: item.productId,
@@ -39,13 +38,13 @@ export default function CheckoutPage() {
 
       if (result.success) {
         clearCart();
-        alert('Pedido realizado com sucesso!');
-        router.push('/');
+        // Redireciona para a página de sucesso após finalizar
+        router.push('/checkout/sucesso');
       } else {
-        setErrorMessage(result.error || 'Erro ao processar o pedido. Tente novamente.');
+        setErrorMessage(result.error || 'Não foi possível concluir o pedido.');
       }
     } catch (err) {
-      setErrorMessage('Ocorreu um erro inesperado ao enviar o seu pedido.');
+      setErrorMessage('Ocorreu um erro ao conectar com o servidor.');
     } finally {
       setIsSubmitting(false);
     }
@@ -56,7 +55,7 @@ export default function CheckoutPage() {
       <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
         <h1 style={{ color: '#333', marginBottom: '16px' }}>Seu carrinho está vazio</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>
-          Adicione um bolo ou doce do nosso catálogo antes de prosseguir com a compra.
+          Adicione doces ou bolos do nosso catálogo para prosseguir com o pedido.
         </p>
         <Link
           href="/produtos"
@@ -70,7 +69,7 @@ export default function CheckoutPage() {
             fontWeight: 'bold',
           }}
         >
-          Ver Catálogo
+          Ir para o Catálogo
         </Link>
       </div>
     );
@@ -79,14 +78,14 @@ export default function CheckoutPage() {
   if (isPending) {
     return (
       <div style={{ maxWidth: '800px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
-        <p style={{ color: '#666', fontSize: '18px' }}>Carregando dados da sessão...</p>
+        <p style={{ color: '#666', fontSize: '18px' }}>Carregando dados do utilizador...</p>
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
-      <h1 style={{ color: '#333', marginBottom: '24px' }}>Finalização do Pedido</h1>
+      <h1 style={{ color: '#333', marginBottom: '24px' }}>Finalização da Compra</h1>
 
       {errorMessage && (
         <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px' }}>
@@ -94,7 +93,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Resumo da Compra */}
+      {/* Resumo dos Itens */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -129,7 +128,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Bloco de Autenticação / Confirmação */}
+      {/* Verificação da Conta do Cliente */}
       {!session ? (
         <div
           style={{
@@ -142,7 +141,7 @@ export default function CheckoutPage() {
         >
           <h3 style={{ margin: '0 0 12px', color: '#856404' }}>Identificação Necessária</h3>
           <p style={{ color: '#856404', marginBottom: '20px' }}>
-            Para concluir a sua encomenda, entre na sua conta de cliente ou faça um cadastro rápido.
+            Faça login na sua conta para concluir a sua compra com segurança.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <Link
