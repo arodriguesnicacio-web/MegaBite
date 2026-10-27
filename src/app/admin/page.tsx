@@ -1,8 +1,8 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
 import { ProductForm } from '@/app/components/ProductForm';
+import ProductListManager from '@/app/admin/ProductListManager';
 import { updateOrderStatusAction } from '@/app/actions/order';
-import { toggleProductAvailabilityAction, deleteProductAction } from '@/app/actions/product';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -92,7 +92,6 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* SEÇÃO 1: PEDIDOS REALIZADOS */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -146,7 +145,7 @@ export default async function AdminPage() {
                   </strong>
 
                   <form
-                    action={async (formData) => {
+                    action={async (formData: FormData) => {
                       'use server';
                       const newStatus = formData.get('status') as string;
                       await updateOrderStatusAction(order.id, newStatus);
@@ -221,7 +220,6 @@ export default async function AdminPage() {
         )}
       </div>
 
-      {/* SEÇÃO 2 E 3: FORMULÁRIO E CATÁLOGO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <div
           style={{
@@ -251,86 +249,8 @@ export default async function AdminPage() {
             <span style={{ fontSize: '13px', color: '#666' }}>Itens cadastrados ({products.length})</span>
           </div>
 
-          {products.length === 0 ? (
-            <p style={{ color: '#888', fontSize: '14px' }}>Nenhum produto cadastrado no catálogo.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto' }}>
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  style={{
-                    border: '1px solid #eee',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: '#333', display: 'block', fontSize: '15px' }}>{product.name}</strong>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        color: product.isAvailable ? '#28a745' : '#dc3545',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {product.isAvailable ? '● Disponível' : '● ESGOTADO'}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <form
-                      action={async () => {
-                        'use server';
-                        await toggleProductAvailabilityAction(product.id, !product.isAvailable);
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        style={{
-                          padding: '6px 10px',
-                          backgroundColor: product.isAvailable ? '#dc3545' : '#28a745',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          fontSize: '12px',
-                        }}
-                      >
-                        {product.isAvailable ? 'Esgotado' : 'Disponibilizar'}
-                      </button>
-                    </form>
-
-                    <form
-                      action={async () => {
-                        'use server';
-                        await deleteProductAction(product.id);
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        style={{
-                          padding: '6px 10px',
-                          backgroundColor: '#6c757d',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          fontSize: '12px',
-                        }}
-                      >
-                        Excluir
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* O Componente que causou o erro agora recebe os produtos e processa corretamente */}
+          <ProductListManager products={products} />
         </div>
       </div>
     </div>
