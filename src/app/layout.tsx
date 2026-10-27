@@ -1,26 +1,36 @@
-import React from 'react';
-import Header from '@/app/components/Header';
-import Footer from '@/app/components/Footer';
-import { CartProvider } from '@/context/CartContext';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
+import { CartProvider } from "@/context/CartContext";
 
-export const metadata = {
-  title: 'MegaBite - Confeitaria Artesanal',
-  description: 'Os melhores bolos e doces para o seu evento',
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "MegaBite",
+  description: "Confeitaria artesanal e encomendas de bolos",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="pt-BR">
-      <body style={{ margin: 0, padding: 0, fontFamily: 'system-ui, sans-serif', backgroundColor: '#fcf8f5' }}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <CartProvider>
           <Header />
-          <main style={{ minHeight: 'calc(100vh - 160px)' }}>
-            {children}
-          </main>
+          {children}
           <Footer />
         </CartProvider>
       </body>
