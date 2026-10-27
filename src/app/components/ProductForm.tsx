@@ -1,72 +1,192 @@
 'use client';
 
-import { useState } from 'react';
-import { upload } from '@vercel/blob/client';
+import { useState, useRef } from 'react';
+import { createProduct } from '@/app/actions/product';
+import { uploadImageAction } from '@/app/actions/upload';
 
-export function ProductForm() {
-  const [uploading, setUploading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface Category {
+  id: string;
+  name: string;
+}
 
-  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+export function ProductForm({ categories }: { categories: Category[] }) {
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async () => {
+    const file = fileInputRef.current?.files?.[0];
     if (!file) return;
 
-    // Validação no cliente antes do envio
-    if (file.size > 2 * 1024 * 1024) {
-      setError('O arquivo deve ter no máximo 2 MB.');
-      return;
-    }
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setError('Formato inválido. Envie apenas JPG, PNG ou WEBP.');
-      return;
+      const uploadedUrl = await uploadImageAction(formData);
+      setImageUrl(uploadedUrl);
+    } catch (error) {
+      console.error('Erro ao enviar imagem do produto:', error);
+      alert('Falha ao enviar a imagem do produto.');
+    } finally {
+      setIsUploading(false);
     }
+  };
 
-    setError(null);
-    setUploading(true);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    formData.set('imageUrl', imageUrl);
 
     try {
-      const newBlob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-      });
-
-      setImageUrl(newBlob.url);
-    } catch (err) {
-      setError('Falha ao enviar imagem. Verifique as credenciais do Blob.');
+      await createProduct(formData);
+      
+      // Limpa o formulário usando formRef ao invés de e.currentTarget
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+      
+      setImageUrl('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      alert('Produto cadastrado com sucesso!');
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao cadastrar produto.');
     } finally {
-      setUploading(false);
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '0.65rem 0.85rem',
+    borderRadius: '8px',
+    border: '1px solid #f3e8e2',
+    backgroundColor: '#fffbf7',
+    fontSize: '0.9rem',
+    color: '#2b2d42',
+    boxSizing: 'border-box',
+    outline: 'none',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: '#2b2d42',
+    marginBottom: '0.35rem',
+  };
 
   return (
-    <div className="w-full max-w-md p-4 bg-white rounded-lg shadow-sm">
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Imagem do Produto (Máx. 2MB)
-      </label>
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleFileChange}
-        disabled={uploading}
-        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"
-      />
+    <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div>
+        <label style={labelStyle}>Nome do Produto</label>
+        <input
+          type="text"
+          name="name"
+          required
+          style={inputStyle}
+          placeholder="Ex: Torta Especial de Morango"
+        />
+      </div>
 
-      {uploading && <p className="mt-2 text-sm text-gray-500">A enviar imagem...</p>}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      
-      {imageUrl && (
-        <div className="mt-4">
-          <p className="text-xs text-green-600 mb-1">Upload realizado com sucesso!</p>
-          <img
-            src={imageUrl}
-            alt="Preview"
-            className="w-full h-40 object-cover rounded-md border border-gray-200"
-          />
-          <input type="hidden" name="imageUrl" value={imageUrl} />
+      <div>
+        <label style={labelStyle}>Categoria</label>
+        <select name="categoryId" required style={inputStyle}>
+          <option value="">Selecione uma categoria...</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label style={labelStyle}>Descrição</label>
+        <textarea
+          name="description"
+          rows={3}
+          required
+          style={{ ...inputStyle, resize: 'vertical' }}
+          placeholder="Descreva o sabor, ingredientes e detalhes artesanais..."
+        />
+      </div>
+
+      <div>
+        <label style={labelStyle}>Preço Base (R$)</label>
+        <input
+          type="number"
+          name="price"
+          step="0.01"
+          required
+          style={inputStyle}
+          placeholder="45.00"
+        />
+      </div>
+
+      <div>
+        <label style={labelStyle}>Imagem do Produto (Vercel Blob)</label>
+        <div style={{ marginTop: '0.25rem' }}>
+          <label
+            style={{
+              display: 'inline-block',
+              padding: '0.65rem 1.25rem',
+              backgroundColor: '#fdf0ed',
+              color: '#e07a5f',
+              border: '1px dashed #e07a5f',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {isUploading ? 'Enviando...' : '📁 Selecionar Imagem'}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              disabled={isUploading}
+              style={{ display: 'none' }}
+            />
+          </label>
         </div>
-      )}
-    </div>
+
+        {imageUrl && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', padding: '0.5rem', backgroundColor: '#fffbf7', borderRadius: '8px', border: '1px solid #f3e8e2' }}>
+            <img src={imageUrl} alt="Preview" style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px' }} />
+            <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 700 }}>✓ Imagem guardada no Blob</span>
+          </div>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        disabled={isSubmitting || isUploading}
+        style={{
+          width: '100%',
+          padding: '0.75rem 1.25rem',
+          backgroundColor: '#8b4513',
+          color: '#ffffff',
+          fontWeight: 700,
+          fontSize: '0.9rem',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: isSubmitting ? 'not-allowed' : 'pointer',
+          marginTop: '0.5rem',
+        }}
+      >
+        {isSubmitting ? 'Salvando produto...' : 'Cadastrar Produto'}
+      </button>
+    </form>
   );
 } 

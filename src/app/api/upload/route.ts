@@ -4,19 +4,17 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  // 1. Verifica a sessão no servidor usando o Better Auth
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  }
-
-  // 2. Lógica do Vercel Blob
   const body = (await request.json()) as HandleUploadBody;
 
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
     const jsonResponse = await handleUpload({
       body,
       request,
@@ -29,7 +27,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        console.log('Upload concluído:', blob.url);
+        console.log('Upload do produto concluído:', blob.url);
       },
     });
 

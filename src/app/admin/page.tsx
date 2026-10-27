@@ -1,207 +1,146 @@
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import StatusUpdater from "./StatusUpdater";
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { ProductForm } from '@/app/components/ProductForm';
+import { ProductListManager } from './ProductListManager';
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
-export default async function AdminDashboardPage() {
-  let quotes: Array<Record<string, any>> = [];
-  try {
-    // Consulta SQL direta para evitar conflitos de mapeamento do Prisma Client
-    quotes = await prisma.$queryRaw`SELECT * FROM quote_request`;
-  } catch (error) {
-    console.error("Erro ao procurar orçamentos:", error);
+export default async function AdminPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    redirect('/login');
   }
 
-  const getStatusBadgeStyle = (status: string) => {
-    switch (status) {
-      case "SOLICITADO":
-        return { bg: "#FFF3CD", color: "#856404", border: "#FFEEBA" };
-      case "EM_ANALISE":
-        return { bg: "#D1ECF1", color: "#0C5460", border: "#BEE5EB" };
-      case "APROVADO":
-        return { bg: "#D4EDDA", color: "#155724", border: "#C3E6CB" };
-      case "RECUSADO":
-        return { bg: "#F8D7DA", color: "#721C24", border: "#F5C6CB" };
-      default:
-        return { bg: "#E2E3E5", color: "#383D41", border: "#D6D8DB" };
+  // Busca lista de produtos
+  const productsRaw = await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: {
+      sizes: true,
+    },
+  });
+
+  const products = productsRaw.map((p) => ({
+    ...p,
+    sizes: p.sizes.map((s) => ({
+      ...s,
+      price: Number(s.price),
+    })),
+  }));
+
+  const categories = await prisma.category.findMany({
+    orderBy: { name: 'asc' },
+  });
+
+  // Busca lista de pedidos (ou consulta segura caso a tabela ainda não esteja alimentada)
+  let orders: any[] = [];
+  try {
+    // @ts-ignore
+    if (prisma.order) {
+      // @ts-ignore
+      orders = await prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
     }
-  };
+  } catch (e) {
+    orders = [];
+  }
 
   return (
-    <div
-      style={{
-        backgroundColor: "#FFFCF8",
-        color: "#6B3E2E",
-        minHeight: "100vh",
-        padding: "2.5rem 1rem",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#fffbf7', padding: '2rem 1rem', fontFamily: 'sans-serif' }}>
+      <main style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         
         {/* Cabeçalho */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <div style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.25rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
           <div>
-            <h1 style={{ fontSize: "2rem", fontWeight: "bold", color: "#6B3E2E" }}>
+            <span style={{ display: 'inline-block', backgroundColor: '#fdf0ed', color: '#e07a5f', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '9999px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
               Painel Administrativo
-            </h1>
-            <p style={{ opacity: 0.8, fontSize: "0.95rem" }}>
-              Gestão de Pedidos de Orçamento da MegaBite
+            </span>
+            <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#2b2d42', fontWeight: 800 }}>Gestão MegaBite</h1>
+            <p style={{ margin: '0.2rem 0 0 0', color: '#7d7d7d', fontSize: '0.85rem' }}>
+              Bem-vindo(a) de volta, <strong>{session.user.name}</strong>!
             </p>
           </div>
-          <Link
-            href="/"
-            style={{
-              backgroundColor: "#FDF6F0",
-              color: "#6B3E2E",
-              padding: "0.6rem 1.2rem",
-              borderRadius: "20px",
-              border: "1px solid #F0BFB3",
-              textDecoration: "none",
-              fontWeight: "bold",
-              fontSize: "0.9rem",
-            }}
-          >
-            ← Voltar ao Site
-          </Link>
+          <div style={{ backgroundColor: '#fdf0ed', border: '1px solid #f8d7da', padding: '0.4rem 1rem', borderRadius: '10px', textAlign: 'center' }}>
+            <span style={{ display: 'block', fontSize: '0.65rem', color: '#e07a5f', fontWeight: 700, textTransform: 'uppercase' }}>Total Produtos</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#8b4513' }}>{products.length}</span>
+          </div>
         </div>
 
-        {/* Lista */}
-        {quotes.length === 0 ? (
-          <div
-            style={{
-              background: "#FDF6F0",
-              padding: "3rem",
-              borderRadius: "15px",
-              textAlign: "center",
-              border: "1px solid #F0BFB3",
-            }}
-          >
-            <p style={{ fontSize: "1.1rem", opacity: 0.8 }}>
-              Nenhum pedido de orçamento encontrado no momento.
-            </p>
+        {/* TOP PRIORIDADE: Painel de Pedidos Realizados */}
+        <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
+          <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#2b2d42' }}>📦 Pedidos Realizados</h2>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>
+                Acompanhe e gerencie as solicitações feitas pelos clientes
+              </p>
+            </div>
+            <span style={{ backgroundColor: '#fdf0ed', color: '#8b4513', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '8px' }}>
+              {orders.length} pedidos
+            </span>
           </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {quotes.map((item: Record<string, any>) => {
-              const badge = getStatusBadgeStyle(item.status);
-              
-              const nome = item.nome_cliente || item.nomeCliente || "Cliente não identificado";
-              const tel = item.telefone || "";
-              const produto = item.tipo_produto || item.tipoProduto || "N/A";
-              const qtd = item.quantidade_pessoas || item.quantidadePessoas || "N/A";
-              const data = item.data_desejada || item.dataDesejada || null;
-              const tema = item.tema || "Sem tema";
-              const obs = item.observacoes || "";
 
-              return (
-                <div
-                  key={item.id}
-                  style={{
-                    backgroundColor: "#FDF6F0",
-                    borderRadius: "16px",
-                    border: "1px solid #F0BFB3",
-                    padding: "1.5rem",
-                    boxShadow: "0 4px 15px rgba(107, 62, 46, 0.04)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      flexWrap: "wrap",
-                      gap: "1rem",
-                      marginBottom: "1rem",
-                      borderBottom: "1px solid #F0BFB3",
-                      paddingBottom: "1rem",
-                    }}
-                  >
-                    <div>
-                      <h3 style={{ fontSize: "1.2rem", color: "#6B3E2E", margin: 0 }}>
-                        {nome}
-                      </h3>
-                      <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: "0.2rem 0 0 0" }}>
-                        Telefone: {tel || "Não informado"}
-                      </p>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                      <span
-                        style={{
-                          backgroundColor: badge.bg,
-                          color: badge.color,
-                          border: `1px solid ${badge.border}`,
-                          padding: "0.3rem 0.8rem",
-                          borderRadius: "12px",
-                          fontWeight: "bold",
-                          fontSize: "0.8rem",
-                        }}
-                      >
-                        {item.status}
-                      </span>
-
-                      <StatusUpdater quoteId={item.id} initialStatus={item.status} />
-                    </div>
+          {orders.length === 0 ? (
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: '#7d7d7d', backgroundColor: '#fffbf7', borderRadius: '8px', border: '1px dashed #f3e8e2' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Nenhum pedido realizado até ao momento.</p>
+              <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem', display: 'block' }}>
+                Os novos pedidos recebidos aparecerão nesta seção em tempo real.
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {orders.map((order) => (
+                <div key={order.id} style={{ padding: '1rem', border: '1px solid #f3e8e2', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fffbf7' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#2b2d42' }}>Pedido #{order.id.slice(-6)}</h4>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#7d7d7d' }}>Cliente: {order.userName || 'Cliente'}</p>
                   </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                      gap: "1rem",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    <div>
-                      <strong>Produto:</strong> {produto}
-                    </div>
-                    <div>
-                      <strong>Pessoas:</strong> {qtd}
-                    </div>
-                    <div>
-                      <strong>Data Desejada:</strong>{" "}
-                      {data ? new Date(data).toLocaleDateString("pt-BR") : "N/A"}
-                    </div>
-                    <div>
-                      <strong>Tema:</strong> {tema}
-                    </div>
-                  </div>
-
-                  {obs && (
-                    <div style={{ marginTop: "1rem", fontSize: "0.88rem", background: "#FFFCF8", padding: "0.8rem", borderRadius: "8px" }}>
-                      <strong>Observações / Restrições:</strong> {obs}
-                    </div>
-                  )}
-
-                  {tel && (
-                    <div style={{ marginTop: "1.2rem", textAlign: "right" }}>
-                      <a
-                        href={`https://wa.me/55${tel.replace(/\D/g, "")}?text=Olá%20${encodeURIComponent(nome)}!%20Estamos%20entrando%20em%20contato%20sobre%20o%20seu%20orçamento%20na%20MegaBite.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-block",
-                          backgroundColor: "#25D366",
-                          color: "#FFF",
-                          padding: "0.5rem 1.2rem",
-                          borderRadius: "20px",
-                          textDecoration: "none",
-                          fontWeight: "bold",
-                          fontSize: "0.85rem",
-                        }}
-                      >
-                        💬 Responder no WhatsApp
-                      </a>
-                    </div>
-                  )}
-
+                  <span style={{ fontWeight: 800, color: '#8b4513', fontSize: '0.9rem' }}>
+                    R$ {Number(order.total || 0).toFixed(2)}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </section>
 
-      </div>
+        {/* PARTE INFERIOR: Grid Lado a Lado no PC (auto-fit) e Empilhado no Telemóvel */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          
+          {/* Formulário de Cadastro */}
+          <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
+            <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#2b2d42' }}>Adicionar Novo Produto</h2>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>Preencha para publicar no catálogo</p>
+            </div>
+            <ProductForm categories={categories} />
+          </section>
+
+          {/* Catálogo de Produtos com Botão de Edição + Troca de Imagem */}
+          <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
+            <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#2b2d42' }}>Catálogo de Produtos</h2>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>
+                Itens cadastrados ({products.length})
+              </p>
+            </div>
+
+            {products.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#7d7d7d', fontSize: '0.875rem' }}>
+                Nenhum produto cadastrado até ao momento.
+              </div>
+            ) : (
+              <ProductListManager products={products} />
+            )}
+          </section>
+
+        </div>
+
+      </main>
     </div>
   );
-}
+} 

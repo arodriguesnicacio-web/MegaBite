@@ -6,6 +6,30 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   // Buscar os produtos do banco de dados para os destaques (exatamente 3 cards)
+  
+ <div
+            style={{
+              backgroundColor: '#f8c8dc',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              width: '100%',
+              height: '350px',
+              boxShadow: '0 8px 24px rgba(139, 69, 19, 0.08)',
+            }}
+          >
+             <img
+              src="https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg"
+              alt="Bolos e Doces Artesanais MegaBite"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            /> 
+          </div> 
   const produtosDoBanco = await prisma.product.findMany({
     include: {
       category: true,
@@ -21,7 +45,7 @@ export default async function HomePage() {
     description: p.description,
     category: p.category.name,
     price: p.sizes.length > 0 ? Number(p.sizes[0].price) : 0,
-    image: p.imageUrl || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60",
+    image: p.imageUrl || "https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg",
     slug: p.id,
   }));
 
@@ -95,7 +119,15 @@ export default async function HomePage() {
             justifyContent: "center",
             boxShadow: "0 4px 12px rgba(107, 62, 46, 0.05)"
           }}>
-            <span style={{ fontSize: "4.5rem" }}>🎂</span>
+              <img
+              src="https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg"
+              alt="Bolos e Doces Artesanais MegaBite 🎂"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
           </div>
 
         </div>

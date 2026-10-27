@@ -7,59 +7,82 @@ export function ImageUpload() {
   const inputFileRef = useRef<HTMLInputElement>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleUpload = async () => {
-    if (!inputFileRef.current?.files?.[0]) {
-      alert('Por favor, selecione um arquivo primeiro.');
+  const handleFileChange = async () => {
+    const file = inputFileRef.current?.files?.[0];
+    if (!file) return;
+
+    setErrorMsg(null);
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMsg('O limite é de 2MB.');
+      if (inputFileRef.current) inputFileRef.current.value = '';
       return;
     }
 
-    const file = inputFileRef.current.files[0];
     setIsUploading(true);
-
     try {
-      // Faz o upload seguro utilizando a rota da API que configuramos (/api/upload)
       const newBlob = await upload(file.name, file, {
         access: 'public',
-        handleUploadUrl: '/api/upload', // Aponta para a sua API Route
+        handleUploadUrl: '/api/upload',
       });
-
       setBlobUrl(newBlob.url);
     } catch (error) {
-      console.error('Erro ao enviar imagem:', error);
-      alert('Ocorreu um erro ao enviar a imagem.');
+      setErrorMsg('Erro no upload da foto.');
     } finally {
       setIsUploading(false);
     }
   };
 
+  const handleRemoveImage = () => {
+    setBlobUrl(null);
+    setErrorMsg(null);
+    if (inputFileRef.current) inputFileRef.current.value = '';
+  };
+
   return (
-    <div className="flex flex-col items-start gap-4 p-4 border rounded-lg">
-      <input
-        type="file"
-        ref={inputFileRef}
-        accept="image/jpeg, image/png, image/webp"
-        disabled={isUploading}
-      />
-
-      <button
-        onClick={handleUpload}
-        disabled={isUploading}
-        className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <div
+        style={{
+          width: '100px',
+          height: '100px',
+          borderRadius: '50%',
+          border: '2px solid var(--mb-border)',
+          backgroundColor: 'var(--mb-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
       >
-        {isUploading ? 'Enviando...' : 'Fazer Upload'}
-      </button>
+        {blobUrl ? (
+          <img src={blobUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ fontSize: '0.75rem', color: 'var(--mb-text-muted)' }}>Sem foto</span>
+        )}
+      </div>
 
-      {blobUrl && (
-        <div className="mt-4">
-          <p className="text-sm text-green-600 mb-2">Upload concluído com sucesso!</p>
-          <img
-            src={blobUrl}
-            alt="Imagem enviada"
-            className="max-w-xs rounded shadow"
+      {errorMsg && <span style={{ fontSize: '0.75rem', color: 'var(--mb-danger)' }}>{errorMsg}</span>}
+
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <label className="file-upload-btn">
+          {isUploading ? 'Enviando...' : blobUrl ? 'Alterar' : 'Selecionar'}
+          <input
+            type="file"
+            ref={inputFileRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            disabled={isUploading}
+            style={{ display: 'none' }}
           />
-        </div>
-      )}
+        </label>
+
+        {blobUrl && (
+          <button type="button" onClick={handleRemoveImage} className="btn-delete">
+            Remover
+          </button>
+        )}
+      </div>
     </div>
   );
 } 
