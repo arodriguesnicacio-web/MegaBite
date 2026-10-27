@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -11,7 +10,7 @@ model User {
   id        String   @id @default(cuid())
   name      String?
   email     String   @unique
-  role      String   @default("CLIENTE") // "CLIENTE" ou "FUNCIONARIO"
+  role      String   @default("CLIENTE")
   orders    Order[]
   createdAt DateTime @default(now())
 }
@@ -22,7 +21,7 @@ model Product {
   description String?
   category    String?
   imageUrl    String?
-  isAvailable Boolean       @default(true) // Controle de Disponível / Esgotado
+  isAvailable Boolean       @default(true)
   sizes       ProductSize[]
   orderItems  OrderItem[]
   createdAt   DateTime      @default(now())
@@ -33,7 +32,7 @@ model ProductSize {
   id        String   @id @default(cuid())
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String   // Ex: "Fatia", "Bolo Inteiro 1.5kg"
+  name      String
   price     Float
 }
 
@@ -42,11 +41,11 @@ model Order {
   userId            String
   user              User        @relation(fields: [userId], references: [id])
   total             Float
-  status            String      @default("PENDING") // PENDING, CONFIRMED, IN_PREPARATION, READY, DELIVERED, CANCELLED
-  fulfillmentMethod String      @default("RETIRADA") // "RETIRADA" ou "ENTREGA"
-  requestedDate     DateTime    // Data desejada selecionada pelo cliente
-  deliveryAddress   String?     // Endereço (obrigatório se fulfillmentMethod === "ENTREGA")
-  notes             String?     // Observações adicionais do cliente
+  status            String      @default("PENDING")
+  fulfillmentMethod String      @default("RETIRADA")
+  requestedDate     DateTime
+  deliveryAddress   String?
+  notes             String?
   items             OrderItem[]
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
