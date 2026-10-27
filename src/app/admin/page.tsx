@@ -4,7 +4,6 @@ import { ProductForm } from '@/app/components/ProductForm';
 import { updateOrderStatusAction } from '@/app/actions/order';
 import { toggleProductAvailabilityAction, deleteProductAction } from '@/app/actions/product';
 
-// Força o carregamento dinâmico no servidor a cada requisição
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -13,7 +12,6 @@ export default async function AdminPage() {
   let products: any[] = [];
   let categories: any[] = [];
 
-  // Busca segura de todas as encomendas no banco de dados
   try {
     orders = await (prisma.order as any).findMany({
       orderBy: { createdAt: 'desc' },
@@ -28,7 +26,6 @@ export default async function AdminPage() {
     console.error('Erro ao carregar pedidos na administração:', err);
   }
 
-  // Busca dos produtos do catálogo
   try {
     products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
@@ -38,7 +35,6 @@ export default async function AdminPage() {
     console.error('Erro ao carregar produtos na administração:', err);
   }
 
-  // Busca de categorias
   try {
     categories = await (prisma as any).category.findMany();
   } catch (err) {
@@ -47,7 +43,6 @@ export default async function AdminPage() {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
-      {/* Cabeçalho Principal do Painel */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -97,7 +92,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* SEÇÃO 1: TABELA DE PEDIDOS REALIZADOS */}
+      {/* SEÇÃO 1: PEDIDOS REALIZADOS */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -150,7 +145,6 @@ export default async function AdminPage() {
                     Pedido #{String(order.id).substring(0, 8)}
                   </strong>
 
-                  {/* Formulário para Atualização do Status do Pedido */}
                   <form
                     action={async (formData) => {
                       'use server';
@@ -197,11 +191,22 @@ export default async function AdminPage() {
                 )}
 
                 {order.items && order.items.length > 0 && (
-                  <div style={{ fontSize: '13px', color: '#444', marginBottom: '8px', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #f0f0f0' }}>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#444',
+                      marginBottom: '8px',
+                      backgroundColor: '#ffffff',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #f0f0f0',
+                    }}
+                  >
                     <strong>Itens: </strong>
                     {order.items.map((item: any, idx: number) => (
                       <span key={item.id || idx}>
-                        {item.quantity}x {item.product?.name || 'Produto'} ({item.sizeName}){idx < order.items.length - 1 ? ', ' : ''}
+                        {item.quantity}x {item.product?.name || 'Produto'} ({item.sizeName})
+                        {idx < order.items.length - 1 ? ', ' : ''}
                       </span>
                     ))}
                   </div>
@@ -216,9 +221,8 @@ export default async function AdminPage() {
         )}
       </div>
 
-      {/* SEÇÃO 2 E 3: CADASTRO DE PRODUTOS + GESTÃO DO CATÁLOGO */}
+      {/* SEÇÃO 2 E 3: FORMULÁRIO E CATÁLOGO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Formulário para Adicionar Novo Produto */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -234,7 +238,6 @@ export default async function AdminPage() {
           <ProductForm categories={categories} />
         </div>
 
-        {/* Gestão dos Produtos Existentes */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -278,7 +281,6 @@ export default async function AdminPage() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {/* Botão para Alternar Disponibilidade (Esgotado) */}
                     <form
                       action={async () => {
                         'use server';
@@ -302,7 +304,6 @@ export default async function AdminPage() {
                       </button>
                     </form>
 
-                    {/* Botão de Exclusão Segura */}
                     <form
                       action={async () => {
                         'use server';
