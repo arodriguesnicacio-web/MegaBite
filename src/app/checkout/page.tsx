@@ -11,6 +11,7 @@ export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -24,7 +25,7 @@ export default function CheckoutPage() {
       setIsSubmitting(true);
       setErrorMessage('');
 
-      // Chama a Server Action para salvar o pedido no banco de dados
+      // Envia os itens para validação e criação no servidor
       const result = await createOrderAction({
         items: items.map(item => ({
           productId: item.productId,
@@ -39,12 +40,12 @@ export default function CheckoutPage() {
       if (result.success) {
         clearCart();
         alert('Pedido realizado com sucesso!');
-        router.push('/perfil'); // Ou redireciona para a tela de confirmação/pedidos
+        router.push('/');
       } else {
         setErrorMessage(result.error || 'Erro ao processar o pedido. Tente novamente.');
       }
     } catch (err) {
-      setErrorMessage('Ocorreu um erro inesperado ao enviar a sua encomenda.');
+      setErrorMessage('Ocorreu um erro inesperado ao enviar o seu pedido.');
     } finally {
       setIsSubmitting(false);
     }
@@ -53,9 +54,9 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
-        <h1 style={{ color: '#333', marginBottom: '16px' }}>Nenhum item selecionado</h1>
+        <h1 style={{ color: '#333', marginBottom: '16px' }}>Seu carrinho está vazio</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>
-          O seu carrinho está vazio. Adicione um bolo ou doce antes de prosseguir.
+          Adicione um bolo ou doce do nosso catálogo antes de prosseguir com a compra.
         </p>
         <Link
           href="/produtos"
@@ -69,7 +70,7 @@ export default function CheckoutPage() {
             fontWeight: 'bold',
           }}
         >
-          Ir para o Catálogo
+          Ver Catálogo
         </Link>
       </div>
     );
@@ -93,7 +94,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Resumo dos Itens */}
+      {/* Resumo da Compra */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -103,7 +104,7 @@ export default function CheckoutPage() {
           marginBottom: '24px',
         }}
       >
-        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#6B3E2E' }}>Resumo dos Itens</h2>
+        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#6B3E2E' }}>Resumo do Pedido</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           {items.map((item) => (
             <div
@@ -128,7 +129,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Bloqueio ou Liberação do Pedido */}
+      {/* Bloco de Autenticação / Confirmação */}
       {!session ? (
         <div
           style={{
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
         >
           <h3 style={{ margin: '0 0 12px', color: '#856404' }}>Identificação Necessária</h3>
           <p style={{ color: '#856404', marginBottom: '20px' }}>
-            Para concluir a sua encomenda e salvar no sistema, entre na sua conta ou cadastre-se.
+            Para concluir a sua encomenda, entre na sua conta de cliente ou faça um cadastro rápido.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <Link
@@ -184,10 +185,10 @@ export default function CheckoutPage() {
         >
           <div style={{ textAlign: 'left', marginBottom: '20px' }}>
             <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 'bold' }}>
-              Cliente autenticado: {session.user.name || session.user.email}
+              Cliente: {session.user.name || session.user.email}
             </p>
             <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-              E-mail para confirmação: {session.user.email}
+              Confirmação será enviada para: {session.user.email}
             </p>
           </div>
           <button
@@ -205,7 +206,7 @@ export default function CheckoutPage() {
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
-            {isSubmitting ? 'Enviando Pedido...' : 'Confirmar e Enviar Encomenda →'}
+            {isSubmitting ? 'Processando Encomenda...' : 'Confirmar e Enviar Encomenda →'}
           </button>
         </div>
       )}
