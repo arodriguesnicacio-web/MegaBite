@@ -28,7 +28,6 @@ export async function createProduct(formData: FormData) {
 
     let newProduct;
     try {
-      // Criação usando cast para ignorar conflitos de tipos estritos do Prisma
       newProduct = await (prisma.product as any).create({
         data: {
           name,
@@ -46,7 +45,6 @@ export async function createProduct(formData: FormData) {
         },
       });
     } catch (createError) {
-      // Fallback seguro de criação direta do produto caso a relação de tamanhos divirja
       newProduct = await (prisma.product as any).create({
         data: {
           name,
@@ -92,5 +90,33 @@ export async function toggleProductAvailabilityAction(productId: string, isAvail
   } catch (error) {
     console.error('Erro ao alterar disponibilidade do produto:', error);
     return { success: false, error: 'Erro ao atualizar a disponibilidade no banco de dados.' };
+  }
+}
+
+export async function deleteProductAction(productId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
+    if (!session || !isFuncionario) {
+      return { success: false, error: 'Acesso negado. Apenas administradores podem excluir produtos.' };
+    }
+
+    // Em vez de excluir fisicamente e perder o histórico de pedidos passados, marca como indisponível
+    await (prisma.product as any).update({
+      where: { id: productId },
+      data: { isAvailable: false },
+    });
+
+    revalidatePath('/admin');
+    revalidatePath('/produtos');
+    revalidatePath('/');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao excluir/suspender produto:', error);
+    return { success: false, error: 'Não foi possível excluir o produto.' };
   }
 } 

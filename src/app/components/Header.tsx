@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSession, signOut } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { useCart } from "@/context/CartContext";
 import './Header.css';
 
@@ -11,7 +11,6 @@ export default function Header() {
   const { data: session, isPending } = useSession();
   const { totalItems } = useCart();
 
-  // Verifica se o utilizador tem a permissão de FUNCIONARIO
   const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
 
   return (
@@ -31,7 +30,6 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          {/* Botão do Carrinho */}
           <Link
             href="/carrinho"
             style={{
@@ -72,7 +70,6 @@ export default function Header() {
             <span style={{ fontSize: '0.85rem', color: '#666' }}>A carregar...</span>
           ) : session ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {/* Botão Painel Admin no Desktop (Apenas para FUNCIONARIO) */}
               {isFuncionario && (
                 <Link
                   href="/admin"
@@ -93,17 +90,25 @@ export default function Header() {
                 </Link>
               )}
 
-              <span style={{ fontSize: '0.9rem' }}>
+              <span style={{ fontSize: '0.9rem', color: '#333' }}>
                 Olá, <strong>{session.user.name || session.user.email}</strong>
               </span>
 
-              <button
-                onClick={() => signOut()}
+              <Link
+                href="/minha-conta"
                 className="btn btn-outline"
-                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                style={{
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem'
+                }}
               >
-                Sair
-              </button>
+                👤 Minha Conta
+              </Link>
             </div>
           ) : (
             <Link href="/login" className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
@@ -121,15 +126,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Menu Mobile */}
       {isMenuOpen && (
         <div className="mobile-menu open">
           <Link href="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>Início</Link>
           <Link href="/produtos" className="nav-link" onClick={() => setIsMenuOpen(false)}>Catálogo</Link>
           <Link href="/orcamento" className="nav-link" onClick={() => setIsMenuOpen(false)}>Encomendas</Link>
           <Link href="/sobre" className="nav-link" onClick={() => setIsMenuOpen(false)}>Sobre Nós</Link>
-          
-          {/* Carrinho no Menu Mobile */}
+
           <Link 
             href="/carrinho" 
             className="nav-link" 
@@ -139,11 +142,17 @@ export default function Header() {
             🛒 Carrinho ({totalItems})
           </Link>
 
-          <Link href="/meus-pedidos" className="nav-link" style={{ fontWeight: 'bold' }}>
-  📋 Meus Pedidos
-</Link> 
+          {session && (
+            <Link
+              href="/minha-conta"
+              className="nav-link"
+              style={{ fontWeight: 'bold', color: '#6B3E2E' }}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              👤 Minha Conta
+            </Link>
+          )}
 
-          {/* Link direto no menu mobile para FUNCIONARIO */}
           {isFuncionario && (
             <Link
               href="/admin"
@@ -159,16 +168,6 @@ export default function Header() {
             {session ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <span className="nav-link">Olá, <strong>{session.user.name || session.user.email}</strong></span>
-                <button
-                  onClick={() => {
-                    signOut();
-                    setIsMenuOpen(false);
-                  }}
-                  className="btn btn-outline"
-                  style={{ width: '100%', padding: '0.5rem' }}
-                >
-                  Sair
-                </button>
               </div>
             ) : (
               <Link
