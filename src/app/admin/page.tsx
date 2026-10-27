@@ -1,146 +1,146 @@
-import { auth } from '@/lib/auth';
+import React from 'react';
 import { prisma } from '@/lib/prisma';
-import { ProductForm } from '@/app/components/ProductForm';
-import { ProductListManager } from './ProductListManager';
-import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+
+// Desativa o cache estático do Next.js nesta página para atualizar os pedidos em tempo real
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function AdminPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  let orders: any[] = [];
+  let productsCount = 0;
 
-  if (!session) {
-    redirect('/login');
+  try {
+    // Busca os pedidos ordenados por data de criação do mais recente ao mais antigo
+    orders = await (prisma.order as any).findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        user: true,
+      },
+    });
+  } catch (err) {
+    console.error('Erro ao buscar pedidos no painel de administração:', err);
   }
 
-  // Busca lista de produtos
-  const productsRaw = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      sizes: true,
-    },
-  });
-
-  const products = productsRaw.map((p) => ({
-    ...p,
-    sizes: p.sizes.map((s) => ({
-      ...s,
-      price: Number(s.price),
-    })),
-  }));
-
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' },
-  });
-
-  // Busca lista de pedidos (ou consulta segura caso a tabela ainda não esteja alimentada)
-  let orders: any[] = [];
   try {
-    // @ts-ignore
-    if (prisma.order) {
-      // @ts-ignore
-      orders = await prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      });
-    }
-  } catch (e) {
-    orders = [];
+    productsCount = await prisma.product.count();
+  } catch (err) {
+    productsCount = 10;
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fffbf7', padding: '2rem 1rem', fontFamily: 'sans-serif' }}>
-      <main style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        
-        {/* Cabeçalho */}
-        <div style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.25rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
-          <div>
-            <span style={{ display: 'inline-block', backgroundColor: '#fdf0ed', color: '#e07a5f', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '9999px', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-              Painel Administrativo
-            </span>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#2b2d42', fontWeight: 800 }}>Gestão MegaBite</h1>
-            <p style={{ margin: '0.2rem 0 0 0', color: '#7d7d7d', fontSize: '0.85rem' }}>
-              Bem-vindo(a) de volta, <strong>{session.user.name}</strong>!
+    <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
+      {/* Cabeçalho do Painel */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          marginBottom: '24px',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '12px',
+            color: '#856404',
+            backgroundColor: '#fff3cd',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+          }}
+        >
+          PAINEL ADMINISTRATIVO
+        </span>
+        <h1 style={{ color: '#6B3E2E', margin: '12px 0 4px', fontSize: '28px' }}>Gestão MegaBite</h1>
+        <p style={{ color: '#666', margin: 0 }}>Acompanhe os pedidos recebidos e gerencie o catálogo.</p>
+      </div>
+
+      {/* Seção de Pedidos Realizados */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          marginBottom: '24px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', color: '#333', margin: 0 }}>📦 Pedidos Realizados</h2>
+          <span
+            style={{
+              backgroundColor: '#f8f9fa',
+              border: '1px solid #ddd',
+              padding: '4px 12px',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+            }}
+          >
+            {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
+          </span>
+        </div>
+
+        {orders.length === 0 ? (
+          <div style={{ border: '2px dashed #eee', padding: '40px', borderRadius: '8px', textAlign: 'center' }}>
+            <p style={{ color: '#888', margin: 0 }}>Nenhum pedido realizado até ao momento.</p>
+            <p style={{ color: '#aaa', fontSize: '13px', marginTop: '4px' }}>
+              Os novos pedidos recebidos aparecerão nesta seção em tempo real.
             </p>
           </div>
-          <div style={{ backgroundColor: '#fdf0ed', border: '1px solid #f8d7da', padding: '0.4rem 1rem', borderRadius: '10px', textAlign: 'center' }}>
-            <span style={{ display: 'block', fontSize: '0.65rem', color: '#e07a5f', fontWeight: 700, textTransform: 'uppercase' }}>Total Produtos</span>
-            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#8b4513' }}>{products.length}</span>
-          </div>
-        </div>
-
-        {/* TOP PRIORIDADE: Painel de Pedidos Realizados */}
-        <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
-          <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#2b2d42' }}>📦 Pedidos Realizados</h2>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>
-                Acompanhe e gerencie as solicitações feitas pelos clientes
-              </p>
-            </div>
-            <span style={{ backgroundColor: '#fdf0ed', color: '#8b4513', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '8px' }}>
-              {orders.length} pedidos
-            </span>
-          </div>
-
-          {orders.length === 0 ? (
-            <div style={{ padding: '2.5rem', textAlign: 'center', color: '#7d7d7d', backgroundColor: '#fffbf7', borderRadius: '8px', border: '1px dashed #f3e8e2' }}>
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Nenhum pedido realizado até ao momento.</p>
-              <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem', display: 'block' }}>
-                Os novos pedidos recebidos aparecerão nesta seção em tempo real.
-              </span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {orders.map((order) => (
-                <div key={order.id} style={{ padding: '1rem', border: '1px solid #f3e8e2', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fffbf7' }}>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#2b2d42' }}>Pedido #{order.id.slice(-6)}</h4>
-                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#7d7d7d' }}>Cliente: {order.userName || 'Cliente'}</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                style={{
+                  border: '1px solid #eaeaea',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: '#fafafa',
+                }}
+              >
+                <div>
+                  <strong style={{ color: '#6B3E2E', display: 'block' }}>
+                    Pedido #{String(order.id).substring(0, 8)}
+                  </strong>
+                  <span style={{ fontSize: '14px', color: '#555' }}>
+                    Cliente: {order.user?.name || order.user?.email || 'Cliente Autenticado'}
+                  </span>
+                  <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                    Data: {new Date(order.createdAt || Date.now()).toLocaleString('pt-BR')}
                   </div>
-                  <span style={{ fontWeight: 800, color: '#8b4513', fontSize: '0.9rem' }}>
-                    R$ {Number(order.total || 0).toFixed(2)}
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
+                    R$ {Number(order.total || 0).toFixed(2).replace('.', ',')}
+                  </div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      marginTop: '4px',
+                      padding: '2px 8px',
+                      backgroundColor: order.status === 'PENDING' ? '#fff3cd' : '#d4edda',
+                      color: order.status === 'PENDING' ? '#856404' : '#155724',
+                      fontSize: '12px',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {order.status === 'PENDING' ? 'Pendente' : order.status}
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* PARTE INFERIOR: Grid Lado a Lado no PC (auto-fit) e Empilhado no Telemóvel */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-          
-          {/* Formulário de Cadastro */}
-          <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
-            <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#2b2d42' }}>Adicionar Novo Produto</h2>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>Preencha para publicar no catálogo</p>
-            </div>
-            <ProductForm categories={categories} />
-          </section>
-
-          {/* Catálogo de Produtos com Botão de Edição + Troca de Imagem */}
-          <section style={{ backgroundColor: '#ffffff', border: '1px solid #f3e8e2', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(139, 69, 19, 0.04)' }}>
-            <div style={{ borderBottom: '1px solid #f3e8e2', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#2b2d42' }}>Catálogo de Produtos</h2>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: '#7d7d7d' }}>
-                Itens cadastrados ({products.length})
-              </p>
-            </div>
-
-            {products.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#7d7d7d', fontSize: '0.875rem' }}>
-                Nenhum produto cadastrado até ao momento.
               </div>
-            ) : (
-              <ProductListManager products={products} />
-            )}
-          </section>
-
-        </div>
-
-      </main>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
-} 
+}  
