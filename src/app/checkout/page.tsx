@@ -12,12 +12,31 @@ export default function CheckoutPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'RETIRADA' | 'ENTREGA'>('RETIRADA');
+  const [requestedDate, setRequestedDate] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleConfirmOrder = async () => {
+  // Data mínima (hoje) no fuso brasileiro
+  const todayString = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+
+  const handleConfirmOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!session) {
       router.push('/login?redirect=/checkout');
+      return;
+    }
+
+    if (!requestedDate) {
+      setErrorMessage('Por favor, selecione a data desejada para recebimento.');
+      return;
+    }
+
+    if (fulfillmentMethod === 'ENTREGA' && !deliveryAddress.trim()) {
+      setErrorMessage('Por favor, informe o endereço completo para a entrega.');
       return;
     }
 
@@ -33,17 +52,20 @@ export default function CheckoutPage() {
           price: item.price,
           quantity: item.quantity,
         })),
-        totalAmount: subtotal,
+        fulfillmentMethod,
+        requestedDate,
+        deliveryAddress: fulfillmentMethod === 'ENTREGA' ? deliveryAddress : undefined,
+        notes,
       });
 
       if (result.success) {
         clearCart();
         router.push('/checkout/sucesso');
       } else {
-        setErrorMessage(result.error || 'Não foi possível concluir o pedido.');
+        setErrorMessage(result.error || 'Não foi possível registrar o seu pedido.');
       }
     } catch (err) {
-      setErrorMessage('Ocorreu um erro ao conectar com o servidor.');
+      setErrorMessage('Erro de conexão ao processar o seu pedido.');
     } finally {
       setIsSubmitting(false);
     }
@@ -53,16 +75,13 @@ export default function CheckoutPage() {
     return (
       <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', textAlign: 'center' }}>
         <h1 style={{ color: '#333', marginBottom: '16px' }}>Seu carrinho está vazio</h1>
-        <p style={{ color: '#666', marginBottom: '24px' }}>
-          Adicione doces ou bolos do nosso catálogo para prosseguir com o pedido.
-        </p>
+        <p style={{ color: '#666', marginBottom: '24px' }}>Adicione produtos antes de finalizar o pedido.</p>
         <Link
           href="/produtos"
           style={{
-            display: 'inline-block',
             padding: '12px 24px',
             backgroundColor: '#6B3E2E',
-            color: '#ffffff',
+            color: '#fff',
             borderRadius: '8px',
             textDecoration: 'none',
             fontWeight: 'bold',
@@ -76,15 +95,15 @@ export default function CheckoutPage() {
 
   if (isPending) {
     return (
-      <div style={{ maxWidth: '800px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
-        <p style={{ color: '#666', fontSize: '18px' }}>Carregando dados do utilizador...</p>
+      <div style={{ maxWidth: '800px', margin: '60px auto', textAlign: 'center' }}>
+        <p style={{ color: '#666', fontSize: '18px' }}>Carregando dados da sessão...</p>
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
-      <h1 style={{ color: '#333', marginBottom: '24px' }}>Finalização da Compra</h1>
+      <h1 style={{ color: '#6B3E2E', marginBottom: '24px' }}>Finalização do Pedido</h1>
 
       {errorMessage && (
         <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px' }}>
@@ -92,109 +111,106 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Resumo do Pedido */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          marginBottom: '24px',
-        }}
-      >
-        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#6B3E2E' }}>Resumo do Pedido</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-          {items.map((item) => (
-            <div
-              key={`${item.productId}-${item.sizeName}`}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid #eee',
-                paddingBottom: '8px',
-              }}
-            >
-              <div>
-                <strong>{item.productName}</strong> ({item.sizeName}) x {item.quantity}
-              </div>
-              <div>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</div>
+      {/* Resumo dos Itens */}
+      <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '18px', margin: '0 0 16px', color: '#6B3E2E' }}>Resumo dos Produtos</h2>
+        {items.map((item) => (
+          <div key={`${item.productId}-${item.sizeName}`} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '8px', marginBottom: '8px' }}>
+            <div>
+              <strong>{item.productName}</strong> ({item.sizeName}) x {item.quantity}
             </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold' }}>
+            <div>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</div>
+          </div>
+        ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', marginTop: '12px' }}>
           <span>Total:</span>
           <span style={{ color: '#6B3E2E' }}>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
         </div>
       </div>
 
-      {/* Condicional de Login */}
       {!session ? (
-        <div
-          style={{
-            backgroundColor: '#fff3cd',
-            border: '1px solid #ffeeba',
-            padding: '24px',
-            borderRadius: '8px',
-            textAlign: 'center',
-          }}
-        >
+        <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeeba', padding: '24px', borderRadius: '8px', textAlign: 'center' }}>
           <h3 style={{ margin: '0 0 12px', color: '#856404' }}>Identificação Necessária</h3>
-          <p style={{ color: '#856404', marginBottom: '20px' }}>
-            Faça login na sua conta para concluir a sua compra com segurança.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <Link
-              href="/login?redirect=/checkout"
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#6B3E2E',
-                color: '#ffffff',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              Entrar / Cadastrar
-            </Link>
-            <Link
-              href="/carrinho"
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#ffffff',
-                color: '#333',
-                border: '1px solid #ccc',
-                borderRadius: '6px',
-                textDecoration: 'none',
-              }}
-            >
-              Voltar ao Carrinho
-            </Link>
-          </div>
+          <p style={{ color: '#856404', marginBottom: '20px' }}>Faça login na sua conta para concluir a compra.</p>
+          <Link href="/login?redirect=/checkout" style={{ padding: '12px 24px', backgroundColor: '#6B3E2E', color: '#ffffff', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold' }}>
+            Entrar / Cadastrar
+          </Link>
         </div>
       ) : (
-        <div
-          style={{
-            backgroundColor: '#ffffff',
-            padding: '24px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            textAlign: 'right',
-          }}
-        >
-          <div style={{ textAlign: 'left', marginBottom: '20px' }}>
-            <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 'bold' }}>
-              Cliente: {session.user.name || session.user.email}
-            </p>
-            <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-              Confirmação será enviada para: {session.user.email}
-            </p>
+        <form onSubmit={handleConfirmOrder} style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <h2 style={{ fontSize: '18px', color: '#6B3E2E', marginBottom: '16px' }}>Opções de Recebimento</h2>
+
+          {/* Modalidade */}
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+            <label style={{ flex: 1, padding: '12px', border: fulfillmentMethod === 'RETIRADA' ? '2px solid #6B3E2E' : '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input type="radio" name="fulfillment" checked={fulfillmentMethod === 'RETIRADA'} onChange={() => setFulfillmentMethod('RETIRADA')} />
+              <div>
+                <strong>🏪 Retirada no Local</strong>
+                <div style={{ fontSize: '12px', color: '#666' }}>Retire na confeitaria em Alegre-ES</div>
+              </div>
+            </label>
+
+            <label style={{ flex: 1, padding: '12px', border: fulfillmentMethod === 'ENTREGA' ? '2px solid #6B3E2E' : '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input type="radio" name="fulfillment" checked={fulfillmentMethod === 'ENTREGA'} onChange={() => setFulfillmentMethod('ENTREGA')} />
+              <div>
+                <strong>🛵 Entrega em Domicílio</strong>
+                <div style={{ fontSize: '12px', color: '#666' }}>Receba no seu endereço</div>
+              </div>
+            </label>
           </div>
+
+          {/* Data Desejada */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>
+              {fulfillmentMethod === 'RETIRADA' ? 'Data desejada para retirada *' : 'Data desejada para entrega *'}
+            </label>
+            <input
+              type="date"
+              min={todayString}
+              required
+              value={requestedDate}
+              onChange={(e) => setRequestedDate(e.target.value)}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+            />
+          </div>
+
+          {/* Endereço se for Entrega */}
+          {fulfillmentMethod === 'ENTREGA' && (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>
+                Endereço Completo de Entrega *
+              </label>
+              <textarea
+                required
+                rows={3}
+                placeholder="Rua, Número, Bairro, Ponto de Referência..."
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              />
+            </div>
+          )}
+
+          {/* Observações */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', fontSize: '14px' }}>
+              Observações do Pedido (Opcional)
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Escrever 'Parabéns Maria' no bolo"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+            />
+          </div>
+
           <button
-            type="button"
-            onClick={handleConfirmOrder}
+            type="submit"
             disabled={isSubmitting}
             style={{
-              padding: '14px 28px',
+              width: '100%',
+              padding: '14px',
               backgroundColor: isSubmitting ? '#6c757d' : '#28a745',
               color: '#ffffff',
               border: 'none',
@@ -204,9 +220,9 @@ export default function CheckoutPage() {
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
-            {isSubmitting ? 'Processando Encomenda...' : 'Confirmar e Enviar Encomenda →'}
+            {isSubmitting ? 'Enviando Encomenda...' : 'Confirmar e Enviar Encomenda →'}
           </button>
-        </div>
+        </form>
       )}
     </div>
   );

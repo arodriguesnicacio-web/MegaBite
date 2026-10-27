@@ -139,6 +139,10 @@ export default function Header() {
             🛒 Carrinho ({totalItems})
           </Link>
 
+          <Link href="/meus-pedidos" className="nav-link" style={{ fontWeight: 'bold' }}>
+  📋 Meus Pedidos
+</Link> 
+
           {/* Link direto no menu mobile para FUNCIONARIO */}
           {isFuncionario && (
             <Link
