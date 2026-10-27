@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 
 interface ProductCardProps {
@@ -20,12 +21,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart() as any;
   const isEsgotado = product.isAvailable === false;
 
-  // Garante que existe sempre um tamanho ou preço para enviar ao carrinho
   const mainSize = (product.sizes && product.sizes.length > 0)
     ? product.sizes[0]
     : { name: 'Padrão', price: product.price || 0 };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Impede que ao clicar no botão o cliente seja redirecionado para a página de detalhes
     addToCart({
       productId: product.id,
       productName: product.name,
@@ -48,8 +49,8 @@ export function ProductCard({ product }: ProductCardProps) {
         filter: isEsgotado ? 'grayscale(30%)' : 'none',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
         height: '100%',
+        minHeight: '400px', // Garante que o cartão tem sempre espaço suficiente
       }}
     >
       {isEsgotado && (
@@ -72,8 +73,9 @@ export function ProductCard({ product }: ProductCardProps) {
         </span>
       )}
 
-      <div>
-        {/* RESTAURAÇÃO DAS IMAGENS DO BLOB */}
+      {/* ÁREA CLICÁVEL (DIRECIONA PARA OS DETALHES DO PRODUTO) */}
+      <Link href={`/produtos/${product.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -93,10 +95,25 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
 
         <h3 style={{ margin: '0 0 6px', color: '#333', fontSize: '18px' }}>{product.name}</h3>
-        <p style={{ color: '#666', fontSize: '13px', margin: '0 0 12px', minHeight: '36px' }}>{product.description}</p>
-      </div>
+        
+        <p 
+          style={{ 
+            color: '#666', 
+            fontSize: '13px', 
+            margin: '0 0 12px',
+            /* ESTAS 4 LINHAS IMPEDEM QUE O TEXTO EMPURRE O BOTÃO PARA FORA */
+            display: '-webkit-box',
+            WebkitLineClamp: 3, 
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}
+        >
+          {product.description}
+        </p>
+      </Link>
 
-      <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* PREÇO E BOTÃO DO CARRINHO (ANCOrados SEMPRE AO FUNDO) */}
+      <div style={{ marginTop: 'auto', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #eee' }}>
         <span style={{ fontWeight: 'bold', color: '#6B3E2E', fontSize: '16px' }}>
           R$ {Number(mainSize.price).toFixed(2).replace('.', ',')}
         </span>

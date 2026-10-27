@@ -1,45 +1,50 @@
-import { prisma } from "@/lib/prisma";
-import CatalogClient from "@/app/produtos/CatalogClient";
+import React from 'react';
+import { prisma } from '@/lib/prisma';
+import { ProductCard } from '@/app/components/ProductCard';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ProdutosPage() {
-  // 1. Buscar todos os produtos do banco de dados Neon com Prisma (sem filtro restrictivo)
-  const produtosDoBanco = await prisma.product.findMany({
-    include: {
-      category: true,
-      sizes: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  console.log("PRODUTOS ENCONTRADOS NO BANCO:", produtosDoBanco.length);
-  // 2. Buscar categorias reais do banco
-  const categoriasDoBanco = await prisma.category.findMany();
-
-  // Mapear os produtos incluindo o 'slug' e a 'imageUrl' correta
-  const productsFormatted = produtosDoBanco.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    category: p.category.name,
-    price: p.sizes.length > 0 ? Number(p.sizes[0].price) : 0,
-    image: p.imageUrl || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&auto=format&fit=crop&q=60",
-    slug: p.id,
-  }));
-
-  const categoriesList = ["Todos", ...categoriasDoBanco.map((c) => c.name)];
+  let products: any[] = [];
+  
+  try {
+    // É crucial fazer o include do 'sizes', caso contrário o preço vai aparecer como R$ 0,00 e o botão não vai funcionar
+    products = await prisma.product.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { sizes: true }, 
+    });
+  } catch (err) {
+    console.error('Erro ao carregar produtos do catálogo:', err);
+  }
 
   return (
-    <div style={{ backgroundColor: "#FFFCF8", color: "#6B3E2E", minHeight: "100vh", padding: "2rem 1.5rem" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <h1 style={{ textAlign: "center", marginBottom: "0.5rem", color: "#6B3E2E" }}>Nosso Catálogo Artesanal</h1>
-        <p style={{ textAlign: "center", color: "#6B3E2E", opacity: 0.8, marginBottom: "2rem" }}>
-          Escolha as suas delícias favoritas feitas sob encomenda.
-        </p>
+    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
+      <h1 style={{ color: '#6B3E2E', marginBottom: '8px', textAlign: 'center', fontSize: '32px' }}>
+        Nosso Catálogo
+      </h1>
+      <p style={{ color: '#666', marginBottom: '40px', textAlign: 'center', fontSize: '16px' }}>
+        Explore e escolha as melhores opções artesanais para adoçar o seu dia.
+      </p>
 
-        <CatalogClient initialProducts={productsFormatted} categories={categoriesList} />
-      </div>
+      {products.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#888', backgroundColor: '#f9f9f9', borderRadius: '12px' }}>
+          Nenhum produto disponível no momento.
+        </div>
+      ) : (
+        <div 
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '24px',
+            alignItems: 'stretch' // Garante que todos os cartões na mesma linha tenham a mesma altura
+          }}
+        >
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
     </div>
   );
-}
+} 
