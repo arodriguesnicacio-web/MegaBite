@@ -3,13 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { authClient } from '@/lib/auth-client';
 
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
-
-  // Simulação de verificação de autenticação no frontend (integrada ao fluxo do Better Auth)
-  // Em produção/banco online, a sessão real é validada via servidor/Better Auth API
-  const isAuthenticated = false; 
+  
+  // Obtenção da sessão de autenticação em tempo real via Better Auth
+  const { data: session, isPending } = authClient.useSession();
 
   if (items.length === 0) {
     return (
@@ -36,11 +36,19 @@ export default function CheckoutPage() {
     );
   }
 
+  if (isPending) {
+    return (
+      <div style={{ maxWidth: '800px', margin: '60px auto', padding: '20px', textAlign: 'center' }}>
+        <p style={{ color: '#666', fontSize: '18px' }}>Carregando dados da sessão...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
       <h1 style={{ color: '#333', marginBottom: '24px' }}>Finalização do Pedido</h1>
 
-      {/* Caixa de Resumo do Carrinho */}
+      {/* Resumo dos Itens do Carrinho */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -75,8 +83,8 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Bloqueio de Login Obrigatório */}
-      {!isAuthenticated ? (
+      {/* Verificação da Autenticação do Usuário */}
+      {!session ? (
         <div
           style={{
             backgroundColor: '#fff3cd',
@@ -120,9 +128,26 @@ export default function CheckoutPage() {
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'right' }}>
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            textAlign: 'right',
+          }}
+        >
+          <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+            <p style={{ margin: '0 0 8px', color: '#333', fontWeight: 'bold' }}>
+              Cliente autenticado: {session.user.name || session.user.email}
+            </p>
+            <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+              Endereço de e-mail: {session.user.email}
+            </p>
+          </div>
           <button
             type="button"
+            onClick={() => alert('Pedido enviado com sucesso!')}
             style={{
               padding: '14px 28px',
               backgroundColor: '#28a745',

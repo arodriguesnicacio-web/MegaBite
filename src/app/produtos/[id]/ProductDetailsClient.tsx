@@ -1,11 +1,8 @@
 'use client';
 
-import { useCart } from '@/context/CartContext';
-
 import React, { useState } from 'react';
 import Link from 'next/link';
-
-const { addItem } = useCart();
+import { useCart } from '@/context/CartContext';
 
 export interface ProductSizeOption {
   id: string;
@@ -27,10 +24,15 @@ export interface ProductDetailsProps {
 }
 
 export default function ProductDetailsClient({ product }: ProductDetailsProps) {
-  // Inicializa com a primeira opção de tamanho disponível
-  const [selectedSize, setSelectedSize] = useState<ProductSizeOption>(
-    product.sizes[0] || { id: 'default', sizeName: 'Padrão', price: 0 }
-  );
+  // Hook do carrinho chamado dentro do componente funcional
+  const { addItem } = useCart();
+
+  // Tratamento para garantir que sempre existam opções de tamanho/apresentação
+  const availableSizes = product.sizes && product.sizes.length > 0 
+    ? product.sizes 
+    : [{ id: 'default', sizeName: 'Tamanho Único', price: 0 }];
+
+  const [selectedSize, setSelectedSize] = useState<ProductSizeOption>(availableSizes[0]);
   const [quantity, setQuantity] = useState<number>(1);
   const [addedNotice, setAddedNotice] = useState<boolean>(false);
 
@@ -50,11 +52,11 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
       productName: product.name,
       productImage: product.image,
       sizeName: selectedSize.sizeName,
-      price: Number(selectedSize.price),
+      price: unitPrice,
       quantity: quantity,
       categoryName: product.category?.name,
     });
-  
+
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 3000);
   };
@@ -67,7 +69,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
           display: 'inline-block', 
           marginBottom: '20px', 
           color: '#8b4513', 
-          textDecoration: 'none',
+          textDecoration: 'none', 
           fontWeight: 'bold' 
         }}
       >
@@ -90,11 +92,11 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '30px',
-        backgroundColor: '#ffffff',
-        padding: '24px',
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+        gap: '30px', 
+        backgroundColor: '#ffffff', 
+        padding: '24px', 
+        borderRadius: '12px', 
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)' 
       }}>
         {/* Imagem do Produto */}
         <div>
@@ -118,8 +120,8 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
                 fontSize: '12px', 
                 textTransform: 'uppercase', 
                 letterSpacing: '1px', 
-                color: '#888',
-                fontWeight: 'bold'
+                color: '#888', 
+                fontWeight: 'bold' 
               }}>
                 {product.category.name}
               </span>
@@ -135,7 +137,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
                 Selecione a Apresentação:
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {product.sizes.map((size) => {
+                {availableSizes.map((size) => {
                   const isSelected = selectedSize.id === size.id;
                   return (
                     <button
@@ -224,8 +226,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsProps) {
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease'
+                cursor: 'pointer'
               }}
             >
               Adicionar ao Carrinho
