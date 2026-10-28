@@ -29,8 +29,6 @@ O banco de dados foi modelado utilizando PostgreSQL e mapeado via Prisma ORM. As
 
 ## Como rodar no computador
 
-## Como rodar o projeto no computador
-
 ### 1. Pré-requisitos
 
 Antes de começar, instale:
