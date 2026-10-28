@@ -29,32 +29,92 @@ O banco de dados foi modelado utilizando PostgreSQL e mapeado via Prisma ORM. As
 
 ## Como rodar no computador
 
-1. Clonar o repositório e instalar dependências:
-   ```bash
-   git clone <https://github.com/arodriguesnicacio-web/MegaBite.git>
-   cd megabite
-   npm install
+## Como rodar o projeto no computador
 
-2. Configurar as variáveis de ambiente:
+### 1. Pré-requisitos
 
- Crie um arquivo .env na raiz do projeto com as credenciais da sua base de dados e autenticação:
-2.1 Snippet de código
+Antes de começar, instale:
+
+- [Node.js](https://nodejs.org/) — versão compatível com o projeto.
+- [Git](https://git-scm.com/).
+- PostgreSQL ou acesso a um banco PostgreSQL já configurado.
+
+### 2. Clonar o repositório
+
+Abra o terminal e execute:
+
+```bash
+git clone https://github.com/arodriguesnicacio-web/MegaBite.git
+cd MegaBite
+```
+
+### 3. Instalar as dependências
+
+Na pasta do projeto, execute:
+
+```bash
+npm install
+```
+
+### 4. Configurar as variáveis de ambiente
+
+Crie um arquivo chamado `.env` na raiz do projeto, no mesmo nível do `package.json`, e configure as seguintes variáveis:
+
+```env
 DATABASE_URL="postgresql://usuario:senha@localhost:5432/megabite?schema=public"
 BETTER_AUTH_SECRET="seu-segredo-aqui"
 BETTER_AUTH_URL="http://localhost:3000"
 BLOB_READ_WRITE_TOKEN="seu-token-vercel-blob"
-2.2 Gerar o Prisma Client e aplicar as migrações:
-Bash
-npx prisma generate
-npx prisma migrate dev
+```
 
-          2.3 Popular o banco de dados (Opcional):
-Bash
+**Importante:** substitua os valores de exemplo pelas credenciais correspondentes ao seu ambiente. O banco de dados `megabite` deve existir e estar acessível.
+
+- `DATABASE_URL`: endereço de conexão com o banco PostgreSQL.
+- `BETTER_AUTH_SECRET`: chave secreta utilizada pela autenticação.
+- `BETTER_AUTH_URL`: endereço local da aplicação.
+- `BLOB_READ_WRITE_TOKEN`: token de acesso ao armazenamento de arquivos da Vercel Blob, caso utilizado.
+
+Não compartilhe o arquivo `.env` nem envie credenciais reais ao GitHub.
+
+### 5. Configurar o banco de dados
+
+Gere o Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Aplique as migrações existentes ao banco de dados:
+
+```bash
+npx prisma migrate dev
+```
+
+**Observação:** esses comandos pressupõem que o projeto esteja configurado para utilizar o Prisma CLI dessa forma. Se a versão instalada exigir configurações adicionais, siga as instruções específicas do projeto.
+
+### 6. Popular o banco de dados (opcional)
+
+Caso o projeto tenha um script de seed configurado, execute:
+
+```bash
 npx prisma db seed
-2.4 Iniciar o servidor de desenvolvimento:
-Bash
+```
+
+Esse comando insere os dados iniciais definidos pelo projeto.
+
+### 7. Iniciar o servidor
+
+Execute:
+
+```bash
 npm run dev
-2.5Acesse http://localhost:3000 no seu navegador.
+```
+
+### 8. Acessar a aplicação
+
+Abra o navegador e acesse:
+
+http://localhost:3000
 
 
 ## Como usamos a IA
