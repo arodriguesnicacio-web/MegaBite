@@ -1,5 +1,5 @@
 # <MegaBite>
-**Nicho:** <Confeitaria por encomenda> · **Grupo:** <nº 6>
+**Nicho:** <Confeitaria por encomenda> · **Grupo:** <nº 9>
 **Dupla:** <Amanda Rodrigues Nicácio> (@arodriguesnicacio-web) · <Letícia Nascimento Souza> (@Lettyy09)
 **Sistema no ar:** https://megabite-six.vercel.app/ 
 
