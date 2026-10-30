@@ -5,20 +5,36 @@ import ProductListManager from '@/app/admin/ProductListManager';
 import { updateOrderStatusAction } from '@/app/actions/order';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { auth } from '@/lib/auth'; // Importação do seu sistema de autenticação
+import { auth } from '@/lib/auth';
+import { revalidatePath } from 'next/cache'; // Importação necessária para atualizar a página
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function AdminPage() {
-  // BLOQUEIO DE SEGURANÇA: Verifica se existe uma sessão ativa
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  // Se não houver utilizador logado, redireciona imediatamente para o login
   if (!session) {
     redirect('/login');
+  }
+
+  // SERVER ACTION: Função que é executada no servidor para criar a categoria
+  async function createCategoryAction(formData: FormData) {
+    'use server';
+    const name = formData.get('name') as string;
+    if (!name || name.trim() === '') return;
+    
+    try {
+      await prisma.category.create({
+        data: { name: name.trim() },
+      });
+      // Atualiza a página imediatamente após criar para mostrar a nova categoria
+      revalidatePath('/admin');
+    } catch (err) {
+      console.error('Erro ao criar categoria:', err);
+    }
   }
 
   let orders: any[] = [];
@@ -49,7 +65,6 @@ export default async function AdminPage() {
   }
 
   try {
-    // CONSULTA ATUALIZADA: Busca as categorias reais da nova tabela do banco de dados
     categories = await prisma.category.findMany({
       orderBy: { name: 'asc' }
     });
@@ -60,6 +75,8 @@ export default async function AdminPage() {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
+      
+      {/* CABEÇALHO */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -109,6 +126,75 @@ export default async function AdminPage() {
         </div>
       </div>
 
+      {/* NOVA SEÇÃO: GERIR CATEGORIAS */}
+      <div
+        style={{
+          backgroundColor: '#ffffff',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          marginBottom: '24px',
+        }}
+      >
+        <h2 style={{ fontSize: '20px', color: '#333', margin: '0 0 8px' }}>🏷️ Gerir Categorias</h2>
+        <p style={{ color: '#666', fontSize: '14px', margin: '0 0 16px 0' }}>
+          Crie as categorias (ex: Bolos, Doces, Kits) antes de adicionar os produtos.
+        </p>
+
+        <form action={createCategoryAction} style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+          <input
+            type="text"
+            name="name"
+            placeholder="Nome da nova categoria..."
+            required
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              fontSize: '14px',
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              backgroundColor: '#6B3E2E',
+              color: '#ffffff',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            + Adicionar Categoria
+          </button>
+        </form>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {categories.length === 0 ? (
+            <span style={{ fontSize: '13px', color: '#999' }}>Nenhuma categoria criada ainda.</span>
+          ) : (
+            categories.map((cat) => (
+              <span
+                key={cat.id}
+                style={{
+                  backgroundColor: '#f0e6e3',
+                  color: '#6B3E2E',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                }}
+              >
+                {cat.name}
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* PEDIDOS REALIZADOS */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -237,6 +323,7 @@ export default async function AdminPage() {
         )}
       </div>
 
+      {/* ADICIONAR PRODUTOS & CATÁLOGO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <div
           style={{
