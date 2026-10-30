@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from "@/lib/auth-client";
 import { useCart } from "@/context/CartContext";
+import { checkAdminRole } from '@/app/actions/user';
 import './Header.css';
 
 export default function Header() {
@@ -11,7 +12,19 @@ export default function Header() {
   const { data: session, isPending } = useSession();
   const { totalItems } = useCart();
 
-  const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
+  // Estado para controlar se o utilizador é admin
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Assim que a sessão carregar, vai perguntar à base de dados de forma segura
+  useEffect(() => {
+    if (session?.user) {
+      checkAdminRole().then((isRoleAdmin) => {
+        setIsAdmin(isRoleAdmin);
+      });
+    } else {
+      setIsAdmin(false);
+    }
+  }, [session]);
 
   return (
     <header className="header">
@@ -70,7 +83,8 @@ export default function Header() {
             <span style={{ fontSize: '0.85rem', color: '#666' }}>A carregar...</span>
           ) : session ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {isFuncionario && (
+              {/* RENDERIZAÇÃO CONDICIONAL: Mostra apenas se for ADMIN */}
+              {isAdmin && (
                 <Link
                   href="/admin"
                   style={{
@@ -153,7 +167,8 @@ export default function Header() {
             </Link>
           )}
 
-          {isFuncionario && (
+          {/* RENDERIZAÇÃO CONDICIONAL NO MOBILE: Mostra apenas se for ADMIN */}
+          {isAdmin && (
             <Link
               href="/admin"
               className="nav-link"
@@ -184,4 +199,4 @@ export default function Header() {
       )}
     </header>
   );
-} 
+}
