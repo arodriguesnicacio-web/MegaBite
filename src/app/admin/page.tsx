@@ -3,11 +3,24 @@ import { prisma } from '@/lib/prisma';
 import { ProductForm } from '@/app/components/ProductForm';
 import ProductListManager from '@/app/admin/ProductListManager';
 import { updateOrderStatusAction } from '@/app/actions/order';
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth'; // Importação do seu sistema de autenticação
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function AdminPage() {
+  // BLOQUEIO DE SEGURANÇA: Verifica se existe uma sessão ativa
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  // Se não houver utilizador logado, redireciona imediatamente para o login
+  if (!session) {
+    redirect('/login');
+  }
+
   let orders: any[] = [];
   let products: any[] = [];
   let categories: any[] = [];
@@ -36,8 +49,12 @@ export default async function AdminPage() {
   }
 
   try {
-    categories = await (prisma as any).category.findMany();
+    // CONSULTA ATUALIZADA: Busca as categorias reais da nova tabela do banco de dados
+    categories = await prisma.category.findMany({
+      orderBy: { name: 'asc' }
+    });
   } catch (err) {
+    console.error('Erro ao carregar categorias:', err);
     categories = [];
   }
 
@@ -249,10 +266,9 @@ export default async function AdminPage() {
             <span style={{ fontSize: '13px', color: '#666' }}>Itens cadastrados ({products.length})</span>
           </div>
 
-          {/* O Componente que causou o erro agora recebe os produtos e processa corretamente */}
           <ProductListManager products={products} />
         </div>
       </div>
     </div>
   );
-} 
+}
