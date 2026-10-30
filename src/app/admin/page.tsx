@@ -6,21 +6,32 @@ import { updateOrderStatusAction } from '@/app/actions/order';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
-import { revalidatePath } from 'next/cache'; // Importação necessária para atualizar a página
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function AdminPage() {
+  // 1. Verifica se existe uma sessão ativa
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session) {
+  if (!session || !session.user) {
     redirect('/login');
   }
 
-  // SERVER ACTION: Função que é executada no servidor para criar a categoria
+  // 2. BLINDA A ROTA: Consulta o banco de dados para verificar se o utilizador é realmente ADMIN
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (!dbUser || dbUser.role !== 'ADMIN') {
+    redirect('/'); // Expulsa qualquer utilizador comum de volta para a home
+  }
+
+  // SERVER ACTION: Função para criar a categoria
   async function createCategoryAction(formData: FormData) {
     'use server';
     const name = formData.get('name') as string;
@@ -30,7 +41,6 @@ export default async function AdminPage() {
       await prisma.category.create({
         data: { name: name.trim() },
       });
-      // Atualiza a página imediatamente após criar para mostrar a nova categoria
       revalidatePath('/admin');
     } catch (err) {
       console.error('Erro ao criar categoria:', err);
@@ -100,7 +110,7 @@ export default async function AdminPage() {
               fontWeight: 'bold',
             }}
           >
-            PAINEL ADMINISTRATIVO
+            PAINEL ADMINISTRATIVO (BLOQUEADO PARA ADMINS)
           </span>
           <h1 style={{ color: '#6B3E2E', margin: '12px 0 4px', fontSize: '28px' }}>Gestão MegaBite</h1>
           <p style={{ color: '#666', margin: 0 }}>
@@ -126,7 +136,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* NOVA SEÇÃO: GERIR CATEGORIAS */}
+      {/* GERIR CATEGORIAS */}
       <div
         style={{
           backgroundColor: '#ffffff',
