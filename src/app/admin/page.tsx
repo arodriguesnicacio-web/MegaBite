@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// 1. AÇÃO MOVIDA PARA FORA: Evita bugs de compilação no ambiente de produção do Vercel
+// Ação movida para fora para evitar o Erro #441 no Vercel
 async function createCategoryAction(formData: FormData) {
   'use server';
   const name = formData.get('name') as string;
@@ -27,27 +27,27 @@ async function createCategoryAction(formData: FormData) {
   }
 }
 
+// Ação de atualização de pedido movida para fora do .map() (Evita Erro #441)
+async function updateStatusAction(orderId: string, formData: FormData) {
+  'use server';
+  const newStatus = formData.get('status') as string;
+  await updateOrderStatusAction(orderId, newStatus);
+}
+
 export default async function AdminPage() {
-  // 2. BLOCO SEGURO PARA A SESSÃO
   let session;
   try {
     session = await auth.api.getSession({
       headers: await headers(),
     });
   } catch (error: any) {
-    return (
-      <div style={{ padding: '50px', textAlign: 'center' }}>
-        <h1 style={{ color: 'red', fontSize: '24px' }}>Erro ao ler a sessão</h1>
-        <p>{error.message}</p>
-      </div>
-    );
+    return <div style={{ padding: '50px', textAlign: 'center' }}><p>Erro ao ler a sessão.</p></div>;
   }
 
   if (!session || !session.user) {
     redirect('/login');
   }
 
-  // 3. BLOCO SEGURO PARA O BANCO DE DADOS (Impede o ecrã preto se o banco falhar)
   let dbUser;
   try {
     dbUser = await prisma.user.findUnique({
@@ -55,13 +55,7 @@ export default async function AdminPage() {
       select: { role: true },
     });
   } catch (error: any) {
-    return (
-      <div style={{ padding: '50px', textAlign: 'center' }}>
-        <h1 style={{ color: 'red', fontSize: '24px' }}>Erro de Conexão com o Banco de Dados</h1>
-        <p>Não foi possível validar as suas permissões de administrador no momento.</p>
-        <p style={{ color: '#666', fontSize: '12px', marginTop: '10px' }}>Detalhe técnico: {error.message}</p>
-      </div>
-    );
+    return <div style={{ padding: '50px', textAlign: 'center' }}><p>Erro de Conexão com o Banco.</p></div>;
   }
 
   if (!dbUser || dbUser.role !== 'ADMIN') {
@@ -83,7 +77,7 @@ export default async function AdminPage() {
       },
     });
   } catch (err) {
-    console.error('Erro ao carregar pedidos na administração:', err);
+    console.error('Erro ao carregar pedidos:', err);
   }
 
   try {
@@ -92,7 +86,7 @@ export default async function AdminPage() {
       include: { sizes: true },
     });
   } catch (err) {
-    console.error('Erro ao carregar produtos na administração:', err);
+    console.error('Erro ao carregar produtos:', err);
   }
 
   try {
@@ -103,6 +97,11 @@ export default async function AdminPage() {
     console.error('Erro ao carregar categorias:', err);
     categories = [];
   }
+
+  // SOLUÇÃO CRUCIAL PARA O ERRO #441: Converter dados do Prisma para JSON puro (Serialização segura)
+  // Isso remove objetos "Date" complexos e referências ocultas que quebram o React no lado do cliente
+  const safeProducts = JSON.parse(JSON.stringify(products));
+  const safeCategories = JSON.parse(JSON.stringify(categories));
 
   return (
     <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
@@ -278,13 +277,8 @@ export default async function AdminPage() {
                     Pedido #{String(order.id).substring(0, 8)}
                   </strong>
 
-                  <form
-                    action={async (formData: FormData) => {
-                      'use server';
-                      const newStatus = formData.get('status') as string;
-                      await updateOrderStatusAction(order.id, newStatus);
-                    }}
-                  >
+                  {/* Formulário limpo utilizando .bind para evitar compilação aninhada */}
+                  <form action={updateStatusAction.bind(null, order.id)}>
                     <select
                       name="status"
                       defaultValue={order.status}
@@ -368,7 +362,9 @@ export default async function AdminPage() {
           <p style={{ color: '#666', fontSize: '13px', margin: '0 0 20px' }}>
             Preencha para publicar no catálogo
           </p>
-          <ProductForm categories={categories} />
+          
+          {/* Passando os dados seguros (sem Date objects) */}
+          <ProductForm categories={safeCategories} />
         </div>
 
         <div
@@ -384,7 +380,8 @@ export default async function AdminPage() {
             <span style={{ fontSize: '13px', color: '#666' }}>Itens cadastrados ({products.length})</span>
           </div>
 
-          <ProductListManager products={products} />
+          {/* Passando os dados seguros (sem Date objects) */}
+          <ProductListManager products={safeProducts} />
         </div>
       </div>
     </div>
