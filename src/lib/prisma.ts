@@ -1,28 +1,12 @@
-import { PrismaClient } from "@/app/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const connectionString = process.env.DATABASE_URL;
-
-let prismaInstance: PrismaClient;
-
-if (connectionString) {
-  const adapter = new PrismaPg({ connectionString });
-  prismaInstance = new PrismaClient({ adapter });
-} else {
-  // Mock gracioso para evitar crash durante builds offline/sem banco configurado
-  prismaInstance = new Proxy({} as PrismaClient, {
-    get() {
-      return () => Promise.resolve(null);
-    },
-  });
-}
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? prismaInstance;
+// Usa o Prisma Client gerado automaticamente pela Vercel na pasta padrão
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
-} 
+}
