@@ -11,7 +11,6 @@ import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Ação movida para fora para evitar o Erro #441 no Vercel
 async function createCategoryAction(formData: FormData) {
   'use server';
   const name = formData.get('name') as string;
@@ -27,7 +26,6 @@ async function createCategoryAction(formData: FormData) {
   }
 }
 
-// Ação de atualização de pedido movida para fora do .map() (Evita Erro #441)
 async function updateStatusAction(orderId: string, formData: FormData) {
   'use server';
   const newStatus = formData.get('status') as string;
@@ -98,15 +96,12 @@ export default async function AdminPage() {
     categories = [];
   }
 
-  // SOLUÇÃO CRUCIAL PARA O ERRO #441: Converter dados do Prisma para JSON puro (Serialização segura)
-  // Isso remove objetos "Date" complexos e referências ocultas que quebram o React no lado do cliente
   const safeProducts = JSON.parse(JSON.stringify(products));
   const safeCategories = JSON.parse(JSON.stringify(categories));
 
   return (
     <div style={{ maxWidth: '1100px', margin: '40px auto', padding: '0 20px' }}>
       
-      {/* CABEÇALHO */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -156,7 +151,6 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* GERIR CATEGORIAS */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -224,7 +218,6 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* PEDIDOS REALIZADOS */}
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -277,12 +270,11 @@ export default async function AdminPage() {
                     Pedido #{String(order.id).substring(0, 8)}
                   </strong>
 
-                  {/* Formulário limpo utilizando .bind para evitar compilação aninhada */}
-                  <form action={updateStatusAction.bind(null, order.id)}>
+                  {/* FORMULÁRIO CORRIGIDO: Removido o onChange que crashava o Vercel e adicionado um botão de submissão nativo */}
+                  <form action={updateStatusAction.bind(null, order.id)} style={{ display: 'flex', gap: '8px' }}>
                     <select
                       name="status"
                       defaultValue={order.status}
-                      onChange={(e) => e.target.form?.requestSubmit()}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
@@ -299,6 +291,21 @@ export default async function AdminPage() {
                       <option value="DELIVERED">Concluído</option>
                       <option value="CANCELLED">Cancelado</option>
                     </select>
+                    <button
+                      type="submit"
+                      style={{
+                        backgroundColor: '#6B3E2E',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      OK
+                    </button>
                   </form>
                 </div>
 
@@ -348,7 +355,6 @@ export default async function AdminPage() {
         )}
       </div>
 
-      {/* ADICIONAR PRODUTOS & CATÁLOGO */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <div
           style={{
@@ -363,7 +369,6 @@ export default async function AdminPage() {
             Preencha para publicar no catálogo
           </p>
           
-          {/* Passando os dados seguros (sem Date objects) */}
           <ProductForm categories={safeCategories} />
         </div>
 
@@ -380,7 +385,6 @@ export default async function AdminPage() {
             <span style={{ fontSize: '13px', color: '#666' }}>Itens cadastrados ({products.length})</span>
           </div>
 
-          {/* Passando os dados seguros (sem Date objects) */}
           <ProductListManager products={safeProducts} />
         </div>
       </div>
