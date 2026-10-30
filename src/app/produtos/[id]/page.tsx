@@ -19,8 +19,7 @@ export default async function ProductPage({ params }: PageProps) {
       const dbProduct = (await prisma.product.findUnique({
         where: { id },
         include: {
-          category: true,
-          sizes: true,
+          sizes: true, // "category: true" removido daqui para evitar o crash
         },
       })) as any;
 
@@ -30,7 +29,8 @@ export default async function ProductPage({ params }: PageProps) {
           name: dbProduct.name,
           description: dbProduct.description,
           image: dbProduct.image || dbProduct.imageUrl || '/placeholder-cake.png',
-          category: dbProduct.category ? { name: dbProduct.category.name } : undefined,
+          // Corrigido para ler a categoria como texto simples
+          category: dbProduct.category ? { name: dbProduct.category } : undefined,
           sizes: Array.isArray(dbProduct.sizes)
             ? dbProduct.sizes.map((s: any) => ({
                 id: s.id,
@@ -63,4 +63,4 @@ export default async function ProductPage({ params }: PageProps) {
   }
 
   return <ProductDetailsClient product={productData} />;
-} 
+}
