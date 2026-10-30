@@ -5,20 +5,30 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
+// Função auxiliar para validar se o utilizador é Administrador ou Funcionário
+async function checkAdminAuth() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session || !session.user) return false;
+
+  const userRole = (session.user as { role?: string })?.role;
+  // Permite se for ADMIN ou FUNCIONARIO
+  return userRole === 'ADMIN' || userRole === 'FUNCIONARIO';
+}
+
 export async function createProduct(formData: FormData) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
-    if (!session || !isFuncionario) {
+    const authorized = await checkAdminAuth();
+    if (!authorized) {
       return { success: false, error: 'Acesso negado. Apenas administradores podem criar produtos.' };
     }
 
     const name = formData.get('name') as string;
     const description = (formData.get('description') as string) || '';
     const imageUrl = (formData.get('imageUrl') as string) || '';
+    const categoryId = (formData.get('categoryId') as string) || null;
     const priceStr = formData.get('price') as string;
     const price = priceStr ? parseFloat(priceStr) : 0;
 
@@ -28,11 +38,12 @@ export async function createProduct(formData: FormData) {
 
     let newProduct;
     try {
-      newProduct = await (prisma.product as any).create({
+      newProduct = await prisma.product.create({
         data: {
           name,
           description,
           imageUrl,
+          categoryId: categoryId && categoryId !== '' ? categoryId : null,
           isAvailable: true,
           sizes: {
             create: [{ name: 'Padrão', price: price }],
@@ -40,11 +51,13 @@ export async function createProduct(formData: FormData) {
         },
       });
     } catch (createError) {
-      newProduct = await (prisma.product as any).create({
+      // Fallback caso a tabela de tamanhos falhe
+      newProduct = await prisma.product.create({
         data: {
           name,
           description,
           imageUrl,
+          categoryId: categoryId && categoryId !== '' ? categoryId : null,
           isAvailable: true,
         },
       });
@@ -63,12 +76,8 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(idOrFormData: string | FormData, formDataParam?: FormData) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
-    if (!session || !isFuncionario) {
+    const authorized = await checkAdminAuth();
+    if (!authorized) {
       return { success: false, error: 'Acesso negado. Apenas administradores podem atualizar produtos.' };
     }
 
@@ -86,13 +95,15 @@ export async function updateProduct(idOrFormData: string | FormData, formDataPar
     const name = (formData.get('name') as string) || undefined;
     const description = (formData.get('description') as string) || undefined;
     const imageUrl = (formData.get('imageUrl') as string) || undefined;
+    const categoryId = (formData.get('categoryId') as string) || undefined;
     
-    await (prisma.product as any).update({
+    await prisma.product.update({
       where: { id: productId },
       data: {
         ...(name && { name }),
         ...(description !== undefined && { description }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(categoryId !== undefined && { categoryId: categoryId === '' ? null : categoryId }),
       },
     });
 
@@ -109,17 +120,12 @@ export async function updateProduct(idOrFormData: string | FormData, formDataPar
 
 export async function deleteProduct(productId: string) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
-    if (!session || !isFuncionario) {
+    const authorized = await checkAdminAuth();
+    if (!authorized) {
       return { success: false, error: 'Acesso negado. Apenas administradores podem excluir produtos.' };
     }
 
-    // EXCLUSÃO FÍSICA E DEFINITIVA DO BANCO DE DADOS
-    await (prisma.product as any).delete({
+    await prisma.product.delete({
       where: { id: productId },
     });
 
@@ -129,7 +135,7 @@ export async function deleteProduct(productId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error('Erro ao excluir produto (Possivelmente vinculado a um pedido):', error);
+    console.error('Erro ao excluir produto:', error);
     return { success: false, error: 'Não é possível excluir o produto porque ele já está vinculado a um pedido de um cliente.' };
   }
 }
@@ -138,16 +144,12 @@ export const deleteProductAction = deleteProduct;
 
 export async function toggleProductAvailabilityAction(productId: string, isAvailable: boolean) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const isFuncionario = (session?.user as { role?: string })?.role === 'FUNCIONARIO';
-    if (!session || !isFuncionario) {
+    const authorized = await checkAdminAuth();
+    if (!authorized) {
       return { success: false, error: 'Acesso negado. Ação permitida apenas para administradores.' };
     }
 
-    await (prisma.product as any).update({
+    await prisma.product.update({
       where: { id: productId },
       data: { isAvailable },
     });
@@ -161,4 +163,4 @@ export async function toggleProductAvailabilityAction(productId: string, isAvail
     console.error('Erro ao alterar disponibilidade do produto:', error);
     return { success: false, error: 'Erro ao atualizar a disponibilidade no banco de dados.' };
   }
-} 
+}
