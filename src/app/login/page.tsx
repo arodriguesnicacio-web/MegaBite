@@ -18,9 +18,15 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 1. Verifica se já está logado ao carregar a página
   useEffect(() => {
     if (!isPending && session) {
-      router.replace(redirectTo);
+      const userRole = (session.user as any)?.role;
+      if (userRole === 'ADMIN') {
+        router.replace('/admin');
+      } else {
+        router.replace(redirectTo);
+      }
     }
   }, [session, isPending, router, redirectTo]);
 
@@ -31,7 +37,7 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        // 1. Cria a conta no sistema
+        // Cria a conta
         const signUpRes = await signUp.email({
           email,
           password,
@@ -44,7 +50,7 @@ function LoginForm() {
           return;
         }
 
-        // 2. Autentica automaticamente para salvar os cookies de sessão antes do redirecionamento
+        // Autentica automaticamente
         const signInRes = await signIn.email({
           email,
           password,
@@ -53,9 +59,16 @@ function LoginForm() {
         if (signInRes.error) {
           setError('Cadastro concluído! Por favor, informe seus dados para entrar.');
         } else {
-          router.replace(redirectTo);
+          // 2. Redirecionamento inteligente após cadastro + login
+          const userRole = (signInRes.data?.user as any)?.role;
+          if (userRole === 'ADMIN') {
+            window.location.href = '/admin';
+          } else {
+            router.replace(redirectTo);
+          }
         }
       } else {
+        // Login normal
         const res = await signIn.email({
           email,
           password,
@@ -64,7 +77,15 @@ function LoginForm() {
         if (res.error) {
           setError(res.error.message || 'E-mail ou senha incorretos.');
         } else {
-          router.replace(redirectTo);
+          // 3. Redirecionamento inteligente após login
+          const userRole = (res.data?.user as any)?.role;
+          if (userRole === 'ADMIN') {
+            // Usamos window.location.href para forçar o recarregamento total da página 
+            // e garantir que o Header atualize o botão de Admin
+            window.location.href = '/admin';
+          } else {
+            router.replace(redirectTo);
+          }
         }
       }
     } catch (err) {
@@ -78,7 +99,7 @@ function LoginForm() {
     return (
       <div style={{ maxWidth: '400px', margin: '80px auto', textAlign: 'center', padding: '20px' }}>
         <p style={{ color: '#6B3E2E', fontWeight: 'bold', fontSize: '18px' }}>
-          {isPending ? 'Verificando sessão...' : 'Sessão iniciada! Direcionando para o checkout...'}
+          {isPending ? 'Verificando sessão...' : 'Sessão iniciada! Direcionando...'}
         </p>
       </div>
     );
@@ -234,4 +255,4 @@ export default function LoginPage() {
       <LoginForm />
     </Suspense>
   );
-} 
+}
