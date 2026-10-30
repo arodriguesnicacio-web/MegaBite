@@ -11,40 +11,61 @@ import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// 1. AÇÃO MOVIDA PARA FORA: Evita bugs de compilação no ambiente de produção do Vercel
+async function createCategoryAction(formData: FormData) {
+  'use server';
+  const name = formData.get('name') as string;
+  if (!name || name.trim() === '') return;
+  
+  try {
+    await prisma.category.create({
+      data: { name: name.trim() },
+    });
+    revalidatePath('/admin');
+  } catch (err) {
+    console.error('Erro ao criar categoria:', err);
+  }
+}
+
 export default async function AdminPage() {
-  // 1. Verifica se existe uma sessão ativa
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // 2. BLOCO SEGURO PARA A SESSÃO
+  let session;
+  try {
+    session = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } catch (error: any) {
+    return (
+      <div style={{ padding: '50px', textAlign: 'center' }}>
+        <h1 style={{ color: 'red', fontSize: '24px' }}>Erro ao ler a sessão</h1>
+        <p>{error.message}</p>
+      </div>
+    );
+  }
 
   if (!session || !session.user) {
     redirect('/login');
   }
 
-  // 2. BLINDA A ROTA: Consulta o banco de dados para verificar se o utilizador é realmente ADMIN
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
-
-  if (!dbUser || dbUser.role !== 'ADMIN') {
-    redirect('/'); // Expulsa qualquer utilizador comum de volta para a home
+  // 3. BLOCO SEGURO PARA O BANCO DE DADOS (Impede o ecrã preto se o banco falhar)
+  let dbUser;
+  try {
+    dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+  } catch (error: any) {
+    return (
+      <div style={{ padding: '50px', textAlign: 'center' }}>
+        <h1 style={{ color: 'red', fontSize: '24px' }}>Erro de Conexão com o Banco de Dados</h1>
+        <p>Não foi possível validar as suas permissões de administrador no momento.</p>
+        <p style={{ color: '#666', fontSize: '12px', marginTop: '10px' }}>Detalhe técnico: {error.message}</p>
+      </div>
+    );
   }
 
-  // SERVER ACTION: Função para criar a categoria
-  async function createCategoryAction(formData: FormData) {
-    'use server';
-    const name = formData.get('name') as string;
-    if (!name || name.trim() === '') return;
-    
-    try {
-      await prisma.category.create({
-        data: { name: name.trim() },
-      });
-      revalidatePath('/admin');
-    } catch (err) {
-      console.error('Erro ao criar categoria:', err);
-    }
+  if (!dbUser || dbUser.role !== 'ADMIN') {
+    redirect('/');
   }
 
   let orders: any[] = [];
