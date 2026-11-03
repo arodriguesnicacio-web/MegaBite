@@ -31,22 +31,20 @@ export async function createQuoteAction(formData: FormData) {
       });
     }
 
-    // Formatação limpa e segura das observações (sem quebras de código)
     const textoObservacoes = `Massa: ${saborMassa} / Recheio: ${saborRecheio} | Obs: ${observacoes || "Nenhuma"}`;
 
-    // Gravar na tabela utilizando os nomes de campos corretos do schema
+    // Conversão segura da data
+    const dataObj = dataEntrega ? new Date(dataEntrega) : new Date();
+
+    // Gravar na tabela
     await prisma.quoteRequest.create({
       data: {
-        user: {
-          connect: {
-            id: user.id,
-          },
-        },
+        userId: user.id,
         nomeCliente: nome,
         telefone: telefone,
         tipoProduto: tipoEvento || "Bolo Personalizado",
         quantidadePessoas: parseInt(numPessoas, 10) || 10,
-        dataDesejada: new Date(dataEntrega),
+        dataDesejada: isNaN(dataObj.getTime()) ? new Date() : dataObj,
         tema: observacoes || "Nenhum",
         observacoes: textoObservacoes,
       },
@@ -65,14 +63,13 @@ export async function createQuoteAction(formData: FormData) {
       `*Data Pretendida:* ${dataEntrega}\n` +
       `*Observações:* ${observacoes || "Nenhuma"}`;
 
-    // Aqui você pode alterar para o seu número real futuramente
     const numeroWhatsApp = "5528999999999"; 
     const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
     return { success: true, urlWhatsApp };
 
-  } catch (error) {
-    console.error("Erro ao gravar orçamento:", error);
-    return { success: false, error: "Ocorreu um erro interno ao salvar o pedido." };
+  } catch (error: any) {
+    console.error("ERRO DETALHADO AO GRAVAR ORÇAMENTO:", error);
+    return { success: false, error: `Erro no servidor: ${error?.message || "Erro desconhecido"}` };
   }
 }
