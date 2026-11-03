@@ -45,7 +45,7 @@ export default function CartPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
         {items.map((item: any) => (
           <div
-            key={`${item.productId}-${item.sizeName}`}
+            key={item.id} // USANDO O ID COMPOSTO GERADO NO CONTEXTO
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -71,7 +71,7 @@ export default function CartPage() {
                 min="1"
                 value={item.quantity}
                 onChange={(e) =>
-                  updateQuantity(item.productId, item.sizeName, parseInt(e.target.value) || 1)
+                  updateQuantity(item.id, parseInt(e.target.value) || 1) // ENVIANDO APENAS item.id E QUANTIDADE
                 }
                 style={{
                   width: '60px',
@@ -83,7 +83,7 @@ export default function CartPage() {
               />
               <button
                 type="button"
-                onClick={() => removeItem(item.productId, item.sizeName)}
+                onClick={() => removeItem(item.id)} // ENVIANDO APENAS O item.id
                 style={{
                   backgroundColor: 'transparent',
                   color: '#dc3545',
@@ -134,4 +134,4 @@ export default function CartPage() {
       </div>
     </div>
   );
-} 
+}
