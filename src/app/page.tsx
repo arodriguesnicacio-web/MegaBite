@@ -5,32 +5,6 @@ import ProductCard from "@/app/components/ProductCard";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  // Buscar os produtos do banco de dados para os destaques (exatamente 3 cards)
-  
-  <div
-    style={{
-      backgroundColor: '#f8c8dc',
-      borderRadius: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      width: '100%',
-      height: '350px',
-      boxShadow: '0 8px 24px rgba(139, 69, 19, 0.08)',
-    }}
-  >
-    <img
-      src="https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg"
-      alt="Bolos e Doces Artesanais MegaBite"
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-      }}
-    /> 
-  </div> 
-
   // 1. BUSCA CORRIGIDA: "category: true" removido do include
   const produtosDoBanco = await prisma.product.findMany({
     include: {
@@ -40,14 +14,14 @@ export default async function HomePage() {
     take: 3, // Exibe 3 produtos em destaque
   });
 
-  // 2. MAPEAMENTO CORRIGIDO: Tratamento de category e nulls
+  // 2. MAPEAMENTO CORRIGIDO: Chave imageUrl ajustada para o ProductCard reconhecer
   const featuredProducts = produtosDoBanco.map((p) => ({
     id: p.id,
     name: p.name,
     description: p.description || undefined,
     category: p.category || "Sem categoria", 
     price: p.sizes.length > 0 ? Number(p.sizes[0].price) : 0,
-    image: p.imageUrl || "https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg",
+    imageUrl: p.imageUrl || "https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg", // ALTERADO DE image PARA imageUrl
     slug: p.id,
   }));
 
@@ -119,7 +93,8 @@ export default async function HomePage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(107, 62, 46, 0.05)"
+            boxShadow: "0 4px 12px rgba(107, 62, 46, 0.05)",
+            overflow: 'hidden'
           }}>
               <img
               src="https://i.pinimg.com/1200x/67/07/49/670749dd5a07df6f9964602ffb0b72db.jpg"
@@ -181,7 +156,7 @@ export default async function HomePage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
           {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product as any} />
           ))}
         </div>
 
