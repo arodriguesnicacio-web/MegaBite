@@ -270,7 +270,6 @@ export default async function AdminPage() {
                     Pedido #{String(order.id).substring(0, 8)}
                   </strong>
 
-                  {/* FORMULÁRIO CORRIGIDO: Removido o onChange que crashava o Vercel e adicionado um botão de submissão nativo */}
                   <form action={updateStatusAction.bind(null, order.id)} style={{ display: 'flex', gap: '8px' }}>
                     <select
                       name="status"
