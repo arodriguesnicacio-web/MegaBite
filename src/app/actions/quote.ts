@@ -31,6 +31,9 @@ export async function createQuoteAction(formData: FormData) {
       });
     }
 
+    // Formatação limpa e segura das observações (sem quebras de código)
+    const textoObservacoes = `Massa: ${saborMassa} / Recheio: ${saborRecheio} | Obs: ${observacoes || "Nenhuma"}`;
+
     // Gravar na tabela utilizando os nomes de campos corretos do schema
     await prisma.quoteRequest.create({
       data: {
@@ -45,7 +48,7 @@ export async function createQuoteAction(formData: FormData) {
         quantidadePessoas: parseInt(numPessoas, 10) || 10,
         dataDesejada: new Date(dataEntrega),
         tema: observacoes || "Nenhum",
-        observacoes: `Massa: ${saborMassa} / Recheio: ${saborRecheio} - Obs: ${observacoes || "Nenhuma"}`,
+        observacoes: textoObservacoes,
       },
     });
 
@@ -62,7 +65,8 @@ export async function createQuoteAction(formData: FormData) {
       `*Data Pretendida:* ${dataEntrega}\n` +
       `*Observações:* ${observacoes || "Nenhuma"}`;
 
-    const numeroWhatsApp = "5528999999999";
+    // Aqui você pode alterar para o seu número real futuramente
+    const numeroWhatsApp = "5528999999999"; 
     const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensagem)}`;
 
     return { success: true, urlWhatsApp };
