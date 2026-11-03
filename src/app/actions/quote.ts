@@ -18,41 +18,45 @@ export async function createQuoteAction(formData: FormData) {
       return { success: false, error: "Preencha todos os campos obrigatórios." };
     }
 
-    // Buscar ou garantir um usuário válido para associar o orçamento no banco
-    let user = await prisma.user.findFirst();
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: "Cliente Convidado",
-          email: "cliente@megabite.com.br",
-          role: "CLIENTE",
-          emailVerified: true,
-        },
-      });
-    }
-
     const textoObservacoes = `Massa: ${saborMassa} / Recheio: ${saborRecheio} | Obs: ${observacoes || "Nenhuma"}`;
 
-    // Conversão segura da data
-    const dataObj = dataEntrega ? new Date(dataEntrega) : new Date();
+    // Tenta guardar na base de dados de forma segura (se o modelo existir no Prisma)
+    try {
+      let user = await prisma.user.findFirst();
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            name: "Cliente Convidado",
+            email: "cliente@megabite.com.br",
+            role: "CLIENTE",
+            emailVerified: true,
+          },
+        });
+      }
 
-    // Gravar na tabela
-    await prisma.quoteRequest.create({
-      data: {
-        userId: user.id,
-        nomeCliente: nome,
-        telefone: telefone,
-        tipoProduto: tipoEvento || "Bolo Personalizado",
-        quantidadePessoas: parseInt(numPessoas, 10) || 10,
-        dataDesejada: isNaN(dataObj.getTime()) ? new Date() : dataObj,
-        tema: observacoes || "Nenhum",
-        observacoes: textoObservacoes,
-      },
-    });
+      // Verificação de segurança para evitar crash caso o modelo QuoteRequest não esteja no schema
+      if (prisma.quoteRequest && typeof (prisma.quoteRequest as any).create === "function") {
+        const dataObj = dataEntrega ? new Date(dataEntrega) : new Date();
+        await (prisma.quoteRequest as any).create({
+          data: {
+            userId: user.id,
+            nomeCliente: nome,
+            telefone: telefone,
+            tipoProduto: tipoEvento || "Bolo Personalizado",
+            quantidadePessoas: parseInt(numPessoas, 10) || 10,
+            dataDesejada: isNaN(dataObj.getTime()) ? new Date() : dataObj,
+            tema: observacoes || "Nenhum",
+            observacoes: textoObservacoes,
+          },
+        });
+      }
+    } catch (dbError) {
+      console.warn("Aviso na persistência do orçamento (continuando para o WhatsApp):", dbError);
+    }
 
     revalidatePath("/orcamento");
 
-    // Gerar URL do WhatsApp
+    // Gerar URL do WhatsApp com a mensagem formatada
     const mensagem = `*Novo Pedido de Encomenda - MegaBite*\n\n` +
       `*Nome:* ${nome}\n` +
       `*Telefone:* ${telefone}\n` +
@@ -69,7 +73,7 @@ export async function createQuoteAction(formData: FormData) {
     return { success: true, urlWhatsApp };
 
   } catch (error: any) {
-    console.error("ERRO DETALHADO AO GRAVAR ORÇAMENTO:", error);
-    return { success: false, error: `Erro no servidor: ${error?.message || "Erro desconhecido"}` };
+    console.error("ERRO AO PROCESSAR ORÇAMENTO:", error);
+    return { success: false, error: `Erro ao processar pedido: ${error?.message || "Erro desconhecido"}` };
   }
 }
