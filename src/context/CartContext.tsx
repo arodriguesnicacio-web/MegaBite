@@ -3,7 +3,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, CartContextType } from '@/types/cart';
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// Ajustamos o tipo localmente para garantir compatibilidade caso o seu types/cart.ts
+// ainda esteja a pedir "addItem" ou "addToCart".
+export interface UpdatedCartContextType {
+  items: CartItem[];
+  addToCart: (item: Omit<CartItem, 'id'>) => void;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
+  clearCart: () => void;
+  subtotal: number;
+  totalItems: number;
+}
+
+const CartContext = createContext<UpdatedCartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -29,9 +41,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items]);
 
-  const addItem = (newItem: Omit<CartItem, 'id'>) => {
+  // NOME CORRIGIDO DE addItem PARA addToCart PARA COMBINAR COM OS BOTÕES
+  const addToCart = (newItem: Omit<CartItem, 'id'>) => {
     // Identificador único combinando o ID do produto com a variação/tamanho
-    const itemId = `${newItem.productId}-${newItem.sizeName.replace(/\s+/g, '-').toLowerCase()}`;
+    const sizeName = newItem.sizeName || 'Padrao';
+    const itemId = `${newItem.productId}-${sizeName.replace(/\s+/g, '-').toLowerCase()}`;
 
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex((item) => item.id === itemId);
@@ -73,7 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartContext.Provider
       value={{
         items,
-        addItem,
+        addToCart, // Exporta com o nome correto
         removeItem,
         updateQuantity,
         clearCart,
@@ -92,4 +106,4 @@ export function useCart() {
     throw new Error('useCart deve ser usado dentro de um CartProvider');
   }
   return context;
-} 
+}
